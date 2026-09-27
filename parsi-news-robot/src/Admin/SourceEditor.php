@@ -52,6 +52,10 @@ class SourceEditor {
 	public static function render( $post ) {
 		$c       = Sources::config( $post->ID );
 		$topics  = Settings::terms_with_role( 'topic' );
+		if ( $topics && (int) $c['main_category'] && ! in_array( (int) $c['main_category'], $topics, true ) ) {
+			// The current main category lost its "topic" role later: keep it selectable so saving does not drop it.
+			$topics[] = (int) $c['main_category'];
+		}
 		$section = Settings::terms_with_role( 'section' );
 		$n       = function ( $key ) {
 			return 'pnr[' . $key . ']';
@@ -85,7 +89,7 @@ class SourceEditor {
 					<tr><th>فاصله بررسی</th><td><?php Form::number( $n( 'interval' ), $c['interval'], 1, 1440 ); ?> دقیقه
 						<p class="description">اگر منبع چند بار پشت سر هم خبر جدید نداشته باشد، فاصله به‌طور خودکار تا ۴ برابر بیشتر می‌شود (قابل خاموش کردن در تنظیمات).</p></td></tr>
 					<tr><th>حداکثر خبر در هر بررسی</th><td><?php Form::number( $n( 'max_items' ), $c['max_items'], 1, 50 ); ?></td></tr>
-					<tr><th>خبرهای قدیمی‌تر از</th><td><?php Form::number( $n( 'max_age_hours' ), $c['max_age_hours'], 0, 720 ); ?> ساعت وارد نشوند <span class="description">(۰ = بدون محدودیت)</span></td></tr>
+					<tr><th>خبرهای قدیمی‌تر از</th><td><?php Form::number( $n( 'max_age_hours' ), $c['max_age_hours'], 0, 720 ); ?> ساعت وارد نشوند <span class="description">(۰ = بدون محدودیت تا سقف ۴۵ روز)</span></td></tr>
 					<tr><th>ساعت کاری</th><td>از <input type="time" name="<?php echo esc_attr( $n( 'hours_from' ) ); ?>" value="<?php echo esc_attr( $c['hours_from'] ); ?>"> تا <input type="time" name="<?php echo esc_attr( $n( 'hours_to' ) ); ?>" value="<?php echo esc_attr( $c['hours_to'] ); ?>">
 						<p class="description">خالی = همیشه. مثال: ۰۸:۰۰ تا ۰۱:۰۰ (بازه شبانه هم پشتیبانی می‌شود). ساعت بر اساس منطقه زمانی سایت است.</p></td></tr>
 					<tr><th>انتشار تدریجی</th><td><?php Form::number( $n( 'drip_minutes' ), $inherit( $c['drip_minutes'] ), 0, 240, array( 'placeholder' => 'پیش‌فرض' ) ); ?> دقیقه فاصله بین انتشار خبرهای این منبع
@@ -390,23 +394,16 @@ class SourceEditor {
 		$new = self::sanitize( $in );
 		Sources::save_config( $post_id, $new );
 
-		// Check soon with the new settings.
+		// Check soon, and read the whole feed again so changed filters apply to entries already in it.
 		Sources::set_state(
 			$post_id,
 			array(
-				'next_run'   => 0,
-				'error_runs' => 0,
+				'next_run'      => 0,
+				'error_runs'    => 0,
+				'etag'          => '',
+				'last_modified' => '',
 			)
 		);
-		if ( $old['url'] !== $new['url'] ) {
-			Sources::set_state(
-				$post_id,
-				array(
-					'etag'          => '',
-					'last_modified' => '',
-				)
-			);
-		}
 		if ( $old['index_mode'] !== $new['index_mode'] ) {
 			Queue::schedule_sync();
 		}

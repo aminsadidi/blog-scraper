@@ -71,9 +71,9 @@ class Queue {
 			if ( ! $force && ( (int) $state['next_run'] > $now || ! Sources::in_active_hours( $cfg ) ) ) {
 				continue;
 			}
-			self::fetch_source( $id );
 			// Tentative next run; the fetch job replaces it with the real (adaptive) value.
 			Sources::set_state( $id, array( 'next_run' => $now + max( 1, (int) $cfg['interval'] ) * MINUTE_IN_SECONDS ) );
+			self::fetch_source( $id );
 		}
 	}
 

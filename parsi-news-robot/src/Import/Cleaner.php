@@ -57,7 +57,12 @@ class Cleaner {
 			}
 		}
 
-		foreach ( iterator_to_array( $xp->query( '//script | //style | //noscript | //form | //button | //input | //select | //textarea | //svg | //canvas | //link | //meta | //object | //embed | //applet | //comment()' ) ) as $node ) {
+		// <noscript> often holds the real image of a lazy-loaded one; <form> may wrap real text. Keep their content.
+		foreach ( iterator_to_array( $xp->query( '//noscript | //form' ) ) as $node ) {
+			Dom::unwrap( $node );
+		}
+
+		foreach ( iterator_to_array( $xp->query( '//script | //style | //button | //input | //select | //textarea | //svg | //canvas | //link | //meta | //object | //embed | //applet | //comment()' ) ) as $node ) {
 			Dom::remove( $node );
 		}
 		if ( $opts['remove'] ) {
@@ -212,9 +217,11 @@ class Cleaner {
 				if ( ! self::attached( $el ) || Util::strlen( $el->textContent ) > 200 || $xp->query( './/img | .//iframe | .//video', $el )->length ) {
 					continue;
 				}
-				$text = Util::normalize_fa( $el->textContent );
+				$text = preg_replace( '/^[\s\p{P}\p{S}]+|[\s\p{P}\p{S}]+$/u', '', Util::normalize_fa( $el->textContent ) );
 				foreach ( $phrases as $phrase ) {
-					if ( '' !== $phrase && false !== mb_strpos( $text, $phrase ) ) {
+					// A signature starts the block ("انتهای پیام/", "کد خبر: ۱۲۳"), or is most of a very short block.
+					$pos = '' !== $phrase ? mb_strpos( $text, $phrase ) : false;
+					if ( 0 === $pos || ( false !== $pos && Util::strlen( $text ) <= Util::strlen( $phrase ) + 25 ) ) {
 						Dom::remove( $el );
 						break;
 					}

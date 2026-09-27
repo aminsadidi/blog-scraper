@@ -80,6 +80,9 @@ class Categorizer {
 		}
 
 		$skip_random = $random['none'] > 0 && wp_rand( 1, 100 ) <= $random['none'];
+		if ( 'one' === $random['mode'] && $sections ) {
+			$skip_random = true; // A rule already chose this post's one section.
+		}
 		if ( $eligible && ! $skip_random ) {
 			if ( 'one' === $random['mode'] ) {
 				$picked = self::weighted_pick( $eligible );
@@ -89,7 +92,7 @@ class Categorizer {
 			} else {
 				$keys = array_keys( $eligible );
 				shuffle( $keys );
-				$count = 0;
+				$count = count( $sections ); // Rule-forced sections count toward the cap.
 				foreach ( $keys as $term_id ) {
 					if ( $random['max'] > 0 && $count >= $random['max'] ) {
 						break;

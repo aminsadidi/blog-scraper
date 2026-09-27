@@ -63,12 +63,20 @@ class Cleanup {
 		do {
 			$ids = Items::expired( $source_id, $cutoff, self::BATCH, $exclude );
 			foreach ( $ids as $post_id ) {
+				if ( ! get_post( $post_id ) ) {
+					// The post was removed outside the plugin; just forget it.
+					Items::delete( $post_id );
+					continue;
+				}
 				if ( Settings::get( 'protect_edited' ) && Publisher::edited_by_human( $post_id ) ) {
 					Items::update( $post_id, array( 'keep_post' => 1 ) );
 					continue;
 				}
-				self::delete_post( $post_id );
-				$count++;
+				if ( self::delete_post( $post_id ) ) {
+					$count++;
+				} else {
+					Items::delete( $post_id );
+				}
 			}
 		} while ( $ids && time() - $start < 45 );
 		return $count;
@@ -81,6 +89,9 @@ class Cleanup {
 		$post = get_post( $post_id );
 		$item = Items::get( $post_id );
 		if ( ! $post || ! $item ) {
+			if ( $item ) {
+				Items::delete( $post_id );
+			}
 			return false;
 		}
 		$mode = Settings::get( 'redirect_mode' );

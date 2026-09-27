@@ -188,11 +188,13 @@ class Sources {
 		if ( $cfg['source_name'] ) {
 			return $cfg['source_name'];
 		}
-		if ( $state['feed_title'] ) {
-			return $state['feed_title'];
+		$host  = Util::host( $cfg['url'] );
+		$title = trim( (string) get_post_field( 'post_title', $id ) );
+		// The title is auto-filled with the host when left empty; a real feed title reads better then.
+		if ( '' !== $title && $title !== $host && 'www.' . $host !== $title ) {
+			return $title;
 		}
-		$title = get_the_title( $id );
-		return $title ? $title : Util::host( $cfg['url'] );
+		return $state['feed_title'] ? $state['feed_title'] : ( $title ? $title : $host );
 	}
 
 	public static function home( $id, ?array $cfg = null ) {

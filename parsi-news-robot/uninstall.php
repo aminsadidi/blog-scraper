@@ -2,8 +2,8 @@
 /**
  * Removes the plugin's own data when it is deleted from the Plugins screen.
  *
- * Published news posts are kept on purpose: they are regular WordPress posts now. Their robot markers
- * (noindex flags) are removed, so they behave like any other post.
+ * Published news posts are kept on purpose: they are regular WordPress posts now. The plugin's own markers
+ * are removed; Rank Math's own "noindex" setting on them is kept, so they stay out of Google.
  *
  * @package ParsiNewsRobot
  */
@@ -33,9 +33,13 @@ foreach ( array( 'pnr_settings', 'pnr_db_version', 'pnr_cron_key', 'pnr_last_tic
 delete_transient( 'pnr_schedule_checked' );
 delete_transient( 'pnr_welcome' );
 
-// Scheduled jobs.
-if ( function_exists( 'as_unschedule_all_actions' ) ) {
-	as_unschedule_all_actions( '', array(), 'parsi-news-robot' );
+// Scheduled jobs (Action Scheduler is usually not loaded during uninstall, so its tables are cleaned directly).
+$pnr_groups = $wpdb->prefix . 'actionscheduler_groups';
+if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pnr_groups ) ) === $pnr_groups ) { // phpcs:ignore WordPress.DB
+	$pnr_group_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT group_id FROM {$pnr_groups} WHERE slug = %s", 'parsi-news-robot' ) ); // phpcs:ignore WordPress.DB
+	if ( $pnr_group_id ) {
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}actionscheduler_actions WHERE group_id = %d AND status = 'pending'", $pnr_group_id ) ); // phpcs:ignore WordPress.DB
+	}
 }
 
 // Capability.

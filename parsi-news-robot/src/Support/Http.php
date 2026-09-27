@@ -20,7 +20,7 @@ class Http {
 	public static function get( $url, array $args = array() ) {
 		$settings = Settings::get();
 		$request  = array(
-			'timeout'             => max( 5, (int) $settings['timeout'] ),
+			'timeout'             => isset( $args['timeout'] ) ? (int) $args['timeout'] : max( 5, (int) $settings['timeout'] ),
 			'redirection'         => 5,
 			'user-agent'          => $settings['user_agent'] ? $settings['user_agent'] : 'Mozilla/5.0',
 			'headers'             => array(

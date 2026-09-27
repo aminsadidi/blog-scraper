@@ -126,12 +126,16 @@ class Publisher {
 
 			// wp_update_post (not wp_publish_post) so WordPress also generates the unique slug on publish.
 			if ( 'draft' !== $final ) {
-				wp_update_post(
+				$published = wp_update_post(
 					array(
 						'ID'          => $post_id,
 						'post_status' => $final,
-					)
+					),
+					true
 				);
+				if ( is_wp_error( $published ) ) {
+					Log::error( sprintf( 'خبر «%1$s» ساخته شد ولی منتشر نشد و پیش‌نویس ماند: %2$s', $p['title'], $published->get_error_message() ), $source_id );
+				}
 			}
 		} finally {
 			self::restore_kses( $kses );

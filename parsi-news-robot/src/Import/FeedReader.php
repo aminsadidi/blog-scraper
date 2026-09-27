@@ -194,7 +194,8 @@ class FeedReader {
 			}
 		}
 
-		if ( ! $found ) {
+		// Only probe common feed paths when the site answered at all (an unreachable site would time out 16 times).
+		if ( ! $found && ! is_wp_error( $page ) ) {
 			$parts = wp_parse_url( $site_url );
 			if ( ! empty( $parts['host'] ) ) {
 				$origin = ( isset( $parts['scheme'] ) ? $parts['scheme'] : 'https' ) . '://' . $parts['host'];
@@ -208,7 +209,13 @@ class FeedReader {
 					$probes[] = $origin . $path;
 				}
 				foreach ( array_unique( $probes ) as $probe_url ) {
-					$probe = Http::get( $probe_url, array( 'limit' => 512 * KB_IN_BYTES ) );
+					$probe = Http::get(
+						$probe_url,
+						array(
+							'limit'   => 512 * KB_IN_BYTES,
+							'timeout' => 6,
+						)
+					);
 					if ( ! is_wp_error( $probe ) && preg_match( '~<(rss|feed|rdf:RDF)[\s>]~i', substr( $probe['body'], 0, 2000 ) ) ) {
 						$found[] = array(
 							'url'   => $probe_url,

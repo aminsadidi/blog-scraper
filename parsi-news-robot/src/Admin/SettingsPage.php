@@ -245,7 +245,7 @@ class SettingsPage {
 	}
 
 	public static function save() {
-		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( Installer::CAP ) ) {
+		if ( ! current_user_can( Installer::CAP ) ) {
 			wp_die( 'دسترسی ندارید.', 403 );
 		}
 		check_admin_referer( 'pnr_save_settings' );

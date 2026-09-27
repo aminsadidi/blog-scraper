@@ -82,8 +82,6 @@ class Extractor {
 	const JUNK = array(
 		'script',
 		'style',
-		'noscript',
-		'form',
 		'button',
 		'nav',
 		'aside',
@@ -183,8 +181,14 @@ class Extractor {
 			}
 		}
 
-		foreach ( Dom::select( $xp, 'script, style, noscript, nav, aside, footer, form, iframe[src*="ads"], [hidden]' ) as $node ) {
+		foreach ( Dom::select( $xp, 'script, style, nav, aside, footer, [hidden]' ) as $node ) {
 			Dom::remove( $node );
+		}
+		// Search / comment / newsletter forms go, but a form wrapping the whole page (ASP.NET sites) stays.
+		foreach ( array_reverse( iterator_to_array( $xp->query( '//form' ) ) ) as $form ) {
+			if ( Dom::text_length( $form ) < 300 ) {
+				Dom::remove( $form );
+			}
 		}
 
 		$nodes = array();
@@ -265,6 +269,9 @@ class Extractor {
 			$best     = null;
 			$best_len = 0;
 			foreach ( Dom::select( $xp, $selector ) as $node ) {
+				if ( in_array( strtolower( $node->nodeName ), array( 'html', 'body' ), true ) ) {
+					continue;
+				}
 				$len = Dom::text_length( $node );
 				if ( $len > $best_len && $len >= 250 && Dom::link_density( $xp, $node ) < 0.5 ) {
 					$best     = $node;

@@ -76,8 +76,11 @@ class Fetcher {
 		}
 
 		$candidates = array();
+		$deferred   = false;
 		if ( ! $feed['not_modified'] ) {
-			$max_age = (int) $cfg['max_age_hours'] > 0 ? $now - (int) $cfg['max_age_hours'] * HOUR_IN_SECONDS : 0;
+			// "0 = no limit" still stops at 45 days: the seen table forgets entries after 60 days, and an older
+			// entry still sitting in a feed must not be imported a second time.
+			$max_age = $now - ( (int) $cfg['max_age_hours'] > 0 ? (int) $cfg['max_age_hours'] * HOUR_IN_SECONDS : 45 * DAY_IN_SECONDS );
 			foreach ( $feed['items'] as $item ) {
 				$hash     = Dedupe::item_hash( $item['link'], $item['guid'] );
 				$sig      = self::signature( $item );
@@ -98,6 +101,7 @@ class Fetcher {
 					continue;
 				}
 				if ( count( $candidates ) >= max( 1, (int) $cfg['max_items'] ) ) {
+					$deferred = true;
 					continue;
 				}
 
@@ -135,6 +139,13 @@ class Fetcher {
 					'item' => $item,
 				);
 			}
+		}
+
+		if ( $deferred ) {
+			// New entries are still waiting (max items per check); the next check must read the whole feed
+			// even if it has not changed, so do not send the cache validators.
+			$state_update['etag']          = '';
+			$state_update['last_modified'] = '';
 		}
 
 		// Oldest first, so with drip publishing the newest story ends up on top.
