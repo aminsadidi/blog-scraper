@@ -198,13 +198,25 @@ class FeedReader {
 			$parts = wp_parse_url( $site_url );
 			if ( ! empty( $parts['host'] ) ) {
 				$origin = ( isset( $parts['scheme'] ) ? $parts['scheme'] : 'https' ) . '://' . $parts['host'];
-				foreach ( array( '/rss', '/feed', '/rss.xml', '/feed.xml', '/fa/rss', '/fa/rss/allnews', '/rss/all', '/rss/latest' ) as $path ) {
-					$probe = Http::get( $origin . $path, array( 'limit' => 512 * KB_IN_BYTES ) );
+				$base   = isset( $parts['path'] ) ? rtrim( $parts['path'], '/' ) : '';
+				$paths  = array( '/rss', '/feed', '/rss.xml', '/feed.xml', '/fa/rss', '/fa/rss/allnews', '/rss/all', '/rss/latest' );
+				$probes = array();
+				foreach ( $paths as $path ) {
+					if ( '' !== $base ) {
+						$probes[] = $origin . $base . $path;
+					}
+					$probes[] = $origin . $path;
+				}
+				foreach ( array_unique( $probes ) as $probe_url ) {
+					$probe = Http::get( $probe_url, array( 'limit' => 512 * KB_IN_BYTES ) );
 					if ( ! is_wp_error( $probe ) && preg_match( '~<(rss|feed|rdf:RDF)[\s>]~i', substr( $probe['body'], 0, 2000 ) ) ) {
 						$found[] = array(
-							'url'   => $origin . $path,
+							'url'   => $probe_url,
 							'title' => '',
 						);
+						if ( count( $found ) >= 3 ) {
+							break;
+						}
 					}
 				}
 			}
