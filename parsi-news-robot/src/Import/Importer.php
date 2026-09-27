@@ -145,7 +145,7 @@ class Importer {
 			return null;
 		}
 		if ( Publisher::edited_by_human( $post_id ) ) {
-			Log::info( sprintf( 'خبر «%s» در منبع تغییر کرد ولی چون دستی ویرایش شده، به‌روز نشد.', get_the_title( $post_id ) ), $row->source_id );
+			Log::info( sprintf( 'خبر «%s» در منبع تغییر کرد ولی چون دستی ویرایش شده، به‌روز نشد.', get_post_field( 'post_title', $post_id ) ), $row->source_id );
 			return null;
 		}
 
