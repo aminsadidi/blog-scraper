@@ -75,7 +75,8 @@ class Importer {
 		}
 
 		// Another source may have published the same story since this one was queued.
-		$similar = Dedupe::find_similar( $item['title'], $row->id );
+		$cfg     = Sources::config( $source_id );
+		$similar = Dedupe::find_similar( $item['title'], $row->id, $cfg );
 		if ( $similar && (int) $similar->id < (int) $row->id ) {
 			Seen::update(
 				$row->id,
@@ -90,12 +91,11 @@ class Importer {
 		}
 
 		self::extend_time_limit();
-		$cfg      = Sources::config( $source_id );
 		$prepared = Builder::build( $item, $cfg );
 
 		if ( ! is_wp_error( $prepared ) ) {
 			// Same story republished by another outlet ("به نقل از …"): the text is what gives it away.
-			$copy = Similarity::find( $prepared['title'] . ' ' . $prepared['text'] );
+			$copy = Similarity::find( $prepared['title'] . ' ' . $prepared['text'], 0, $cfg );
 			if ( $copy ) {
 				$note = sprintf(
 					'%1$d٪ شبیه %2$s «%3$s»',

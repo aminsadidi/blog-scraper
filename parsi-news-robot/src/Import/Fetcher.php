@@ -123,7 +123,7 @@ class Fetcher {
 					continue;
 				}
 
-				$similar = Dedupe::find_similar( $item['title'] );
+				$similar = Dedupe::find_similar( $item['title'], 0, $cfg );
 				if ( $similar ) {
 					Seen::insert(
 						$base + array(

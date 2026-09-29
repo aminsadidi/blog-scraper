@@ -304,6 +304,38 @@ class Cleaner {
 	}
 
 	/**
+	 * Find/replace in the visible text only (never inside tags, attributes or URLs).
+	 *
+	 * @param array<string, string> $pairs
+	 */
+	public static function replace_text( $html, array $pairs ) {
+		if ( ! $pairs || '' === trim( (string) $html ) ) {
+			return $html;
+		}
+		$doc  = Dom::load( $html );
+		$xp   = new \DOMXPath( $doc );
+		$from = array_keys( $pairs );
+		$to   = array_values( $pairs );
+		foreach ( $xp->query( '//body//text()' ) as $node ) {
+			$new = str_replace( $from, $to, $node->nodeValue );
+			if ( $new !== $node->nodeValue ) {
+				$node->nodeValue = $new;
+			}
+		}
+		return trim( Dom::inner_html( Dom::body( $doc ) ) );
+	}
+
+	/**
+	 * Removes the listed phrases from a title, with separators left dangling at either end ("… - ایسنا").
+	 */
+	public static function clean_title( $title, $phrases ) {
+		foreach ( Util::lines( $phrases ) as $phrase ) {
+			$title = str_replace( $phrase, '', $title );
+		}
+		return trim( (string) preg_replace( '/^[\s\-–—|:،,]+|[\s\-–—|:،,]+$/u', '', $title ) );
+	}
+
+	/**
 	 * Image URLs in cleaned HTML, in document order.
 	 *
 	 * @return string[]

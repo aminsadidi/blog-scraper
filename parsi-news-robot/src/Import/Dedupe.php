@@ -99,8 +99,9 @@ class Dedupe {
 	 *
 	 * @return object|null {id, status, post_id, score}
 	 */
-	public static function find_similar( $title, $exclude_id = 0 ) {
-		if ( ! Settings::get( 'dup_titles' ) ) {
+	public static function find_similar( $title, $exclude_id = 0, ?array $cfg = null ) {
+		$dup = Settings::duplicates( $cfg ? $cfg : Settings::source_defaults() );
+		if ( ! $dup['title'] ) {
 			return null;
 		}
 		$since = time() - max( 1, (int) Settings::get( 'dup_hours' ) ) * HOUR_IN_SECONDS;

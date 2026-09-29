@@ -48,7 +48,8 @@ class SettingsPage {
 							)
 						);
 						?>
-						<p class="description">فقط لینک‌هایی که از متن منبع آمده‌اند و لینک «به نقل از» تغییر می‌کنند. لینک‌هایی که خودتان در خبرها اضافه کنید هرگز دستکاری نمی‌شوند. تغییر این گزینه فوراً روی همه خبرهای قبلی هم اعمال می‌شود.</p>
+						<p><?php Form::checkbox( 's[links_new_tab]', $s['links_new_tab'], 'لینک‌های داخل متن خبر در تب جدید باز شوند' ); ?></p>
+						<p class="description">فقط لینک‌هایی که از متن منبع آمده‌اند تغییر می‌کنند (لینک «به نقل از» تنظیم جداگانه دارد). لینک‌هایی که خودتان در خبرها اضافه کنید هرگز دستکاری نمی‌شوند. تغییر این گزینه فوراً روی همه خبرهای قبلی هم اعمال می‌شود.</p>
 					</td></tr>
 				</table>
 			</div>
@@ -56,9 +57,10 @@ class SettingsPage {
 			<div class="pnr-box">
 				<h2>به نقل از</h2>
 				<table class="form-table">
-					<tr><th>نمایش</th><td><?php Form::checkbox( 's[attr_enabled]', $s['attr_enabled'], 'زیر یا بالای هر خبر ربات، منبع آن نوشته شود' ); ?></td></tr>
+					<tr><th>نمایش</th><td><?php Form::checkbox( 's[attr_enabled]', $s['attr_enabled'], 'زیر یا بالای هر خبر ربات، منبع آن نوشته شود' ); ?>
+						<p class="description">هر منبع می‌تواند همه این تنظیمات را برای خودش تغییر دهد (تب «به نقل از و لینک‌ها» در صفحه منبع).</p></td></tr>
 					<tr><th>متن</th><td><?php Form::text( 's[attr_template]', $s['attr_template'] ); ?>
-						<p class="description">برچسب‌ها: <code>{source}</code> نام منبع، <code>{title}</code> عنوان خبر، <code>{date}</code> تاریخ.</p></td></tr>
+						<p class="description">برچسب‌ها: <code>{source}</code> نام منبع (با لینک، اگر لینک انتخاب شده باشد)، <code>{title}</code> عنوان خبر، <code>{date}</code> تاریخ، <code>{url}</code> آدرس خبر اصلی. مثال‌ها: «به نقل از {source}» — «منبع: {source}» — «این خبر را {source} منتشر کرده است».</p></td></tr>
 					<tr><th>جای قرارگیری</th><td>
 						<?php
 						Form::select(
@@ -80,6 +82,34 @@ class SettingsPage {
 								'article' => 'صفحه همان خبر در سایت منبع',
 								'home'    => 'صفحه اصلی سایت منبع',
 								'none'    => 'بدون لینک',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>نوع لینک</th><td>
+						<?php
+						Form::radios(
+							's[attr_rel]',
+							$s['attr_rel'],
+							array(
+								'nofollow'  => array( 'nofollow', 'اعتبار سئویی به سایت منبع منتقل نمی‌شود (پیشنهادی).' ),
+								'follow'    => array( 'follow', 'لینک معمولی.' ),
+								'sponsored' => array( 'sponsored', 'برای لینک‌هایی که در ازای همکاری یا تبلیغ داده می‌شوند.' ),
+							)
+						);
+						?>
+						<p><?php Form::checkbox( 's[attr_new_tab]', $s['attr_new_tab'], 'لینک در تب جدید باز شود' ); ?></p>
+					</td></tr>
+					<tr><th>ظاهر</th><td>
+						<?php
+						Form::select(
+							's[attr_style]',
+							$s['attr_style'],
+							array(
+								'plain' => 'متن ساده',
+								'bold'  => 'پررنگ',
+								'small' => 'کوچک و کم‌رنگ',
+								'box'   => 'داخل کادر',
 							)
 						);
 						?>
@@ -181,6 +211,9 @@ class SettingsPage {
 					<tr><th>امضا و عبارت‌های حذفی</th><td>
 						<?php Form::textarea( 's[signatures]', $s['signatures'], 8 ); ?>
 						<p class="description">هر خط یک عبارت. پاراگراف‌های کوتاهی (کمتر از ۲۰۰ حرف) که یکی از این عبارت‌ها را دارند حذف می‌شوند؛ مثل «انتهای پیام»، «کد خبر» یا تبلیغ کانال منبع.</p></td></tr>
+					<tr><th>جایگزینی کلمات</th><td>
+						<?php Form::textarea( 's[replacements]', $s['replacements'], 4 ); ?>
+						<p class="description">هر خط یک جایگزینی به شکل <code>متن قدیم =&gt; متن جدید</code>، روی عنوان و متن همه خبرها. برای حذف، سمت راست را خالی بگذارید (<code>متن اضافه =&gt;</code>). فقط روی متن اعمال می‌شود، نه لینک‌ها و آدرس‌ها. هر منبع هم می‌تواند فهرست خودش را داشته باشد.</p></td></tr>
 					<tr><th>دامنه‌های مجاز برای امبد</th><td>
 						<?php Form::textarea( 's[iframe_hosts]', $s['iframe_hosts'], 3, array( 'dir' => 'ltr' ) ); ?>
 						<p class="description">علاوه بر آپارات، یوتیوب، تلوبیون، نماشا، اینستاگرام، توییتر و… که از قبل مجازند. iframe های دیگر به دلایل امنیتی حذف می‌شوند.</p></td></tr>
@@ -276,6 +309,11 @@ class SettingsPage {
 			'exclude_site_feed'     => Form::bool( $in, 'exclude_site_feed' ),
 			'noindex_categories'    => Form::ids( $in, 'noindex_categories' ),
 			'links_mode'            => Form::choice( $in, 'links_mode', array( 'nofollow', 'follow', 'strip' ), 'nofollow' ),
+			'links_new_tab'         => Form::bool( $in, 'links_new_tab' ),
+			'attr_rel'              => Form::choice( $in, 'attr_rel', array( 'nofollow', 'follow', 'sponsored' ), 'nofollow' ),
+			'attr_new_tab'          => Form::bool( $in, 'attr_new_tab' ),
+			'attr_style'            => Form::choice( $in, 'attr_style', array( 'plain', 'bold', 'small', 'box' ), 'plain' ),
+			'replacements'          => Form::textarea_value( $in, 'replacements' ),
 			'attr_enabled'          => Form::bool( $in, 'attr_enabled' ),
 			'attr_template'         => Form::text_value( $in, 'attr_template' ) ? Form::text_value( $in, 'attr_template' ) : $d['attr_template'],
 			'attr_position'         => Form::choice( $in, 'attr_position', array( 'start', 'end' ), 'end' ),

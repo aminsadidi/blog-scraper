@@ -44,7 +44,8 @@
 		$.post( cfg.ajax, {
 			action: 'pnr_test_source',
 			nonce: cfg.nonce,
-			form: $( '#post' ).find( '[name^="pnr["]' ).serialize()
+			form: $( '#post' ).find( '[name^="pnr["]' ).serialize(),
+			name: $( '#title' ).val() || ''
 		} ).done( function ( res ) {
 			if ( res && res.success ) {
 				message( $out, res.data );

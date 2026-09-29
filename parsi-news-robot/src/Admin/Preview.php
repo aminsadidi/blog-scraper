@@ -19,7 +19,10 @@ class Preview {
 	/**
 	 * @return array|\WP_Error
 	 */
-	public static function run( array $cfg, $limit = 3 ) {
+	/**
+	 * @param string $name The source's name as typed in the editor (used for the attribution preview).
+	 */
+	public static function run( array $cfg, $limit = 3, $name = '' ) {
 		if ( empty( $cfg['url'] ) ) {
 			return new \WP_Error( 'pnr_no_url', 'آدرس RSS را وارد کنید.' );
 		}
@@ -64,11 +67,21 @@ class Preview {
 			$row['featured']    = $built['featured'];
 			$row['categories']  = $names;
 			$row['text']        = $built['text'];
+			$row['title']       = $built['title']; // After title cleanup / replacements.
+			$attr               = \ParsiNewsRobot\Settings::attribution( $cfg );
+			$row['attribution'] = $attr['enabled'] ? \ParsiNewsRobot\Seo\Links::apply_rel(
+				\ParsiNewsRobot\Seo\Links::build_attribution( $attr, $cfg['source_name'] ? $cfg['source_name'] : ( $name ? $name : ( $feed['title'] ? $feed['title'] : wp_parse_url( $item['link'], PHP_URL_HOST ) ) ), $item['link'], $built['title'], wp_date( get_option( 'date_format' ), $item['date'] ? $item['date'] : time() ) ),
+				\ParsiNewsRobot\Settings::links_mode( $cfg ),
+				$attr['rel'],
+				(bool) \ParsiNewsRobot\Settings::get( 'links_new_tab' ),
+				$attr['new_tab']
+			) : '';
+			$row['attr_position'] = $attr['position'];
 			$row['content']     = $built['content'];
 			$seen               = \ParsiNewsRobot\Data\Seen::by_hash( Dedupe::item_hash( $item['link'], $item['guid'], $item['title'], count( wp_list_pluck( $feed['items'], 'link' ) ) !== count( array_unique( wp_list_pluck( $feed['items'], 'link' ) ) ) ) );
 			$row['already']     = $seen ? $seen->status : '';
-			$row['duplicate']   = ! $seen && Dedupe::find_similar( $item['title'] );
-			$copy               = $seen ? null : \ParsiNewsRobot\Import\Similarity::find( $built['title'] . ' ' . $built['text'] );
+			$row['duplicate']   = ! $seen && Dedupe::find_similar( $item['title'], 0, $cfg );
+			$copy               = $seen ? null : \ParsiNewsRobot\Import\Similarity::find( $built['title'] . ' ' . $built['text'], 0, $cfg );
 			$row['copy']        = $copy ? sprintf( 'متن این خبر %1$d٪ شبیه %2$s «%3$s» است و منتشر نمی‌شود.', round( $copy['score'] * 100 ), $copy['own'] ? 'نوشته خود سایت' : 'خبر منتشرشده', get_post_field( 'post_title', $copy['post_id'] ) ) : '';
 			$report['items'][]  = $row;
 		}

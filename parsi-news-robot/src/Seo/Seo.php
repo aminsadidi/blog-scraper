@@ -146,7 +146,7 @@ class Seo {
 		if ( ! is_singular( 'post' ) || ! get_post_meta( get_queried_object_id(), Items::META, true ) ) {
 			return;
 		}
-		echo '<style id="pnr-style">.pnr-video{margin:1em 0}.pnr-video iframe{display:block;width:100%;height:auto;aspect-ratio:16/9;border:0}video{max-width:100%;height:auto}.pnr-source{font-size:.9em;opacity:.85;margin-top:1.2em}</style>' . "\n";
+		echo '<style id="pnr-style">.pnr-video{margin:1em 0}.pnr-video iframe{display:block;width:100%;height:auto;aspect-ratio:16/9;border:0}video{max-width:100%;height:auto}.pnr-source{font-size:.95em;margin:1.2em 0}.pnr-source-small{font-size:.8em;opacity:.8}.pnr-source-box{padding:.6em 1em;border-inline-start:3px solid currentColor;background:rgba(127,127,127,.08);border-radius:4px}</style>' . "\n";
 	}
 
 	/* ---------- Policy flag ---------- */

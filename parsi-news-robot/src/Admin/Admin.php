@@ -213,7 +213,8 @@ class Admin {
 		$data = array();
 		parse_str( isset( $_POST['form'] ) ? wp_unslash( $_POST['form'] ) : '', $data ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$cfg    = SourceEditor::sanitize( isset( $data['pnr'] ) && is_array( $data['pnr'] ) ? $data['pnr'] : array() );
-		$report = Preview::run( $cfg, 3 );
+		$name   = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
+		$report = Preview::run( $cfg, 3, $name );
 		if ( is_wp_error( $report ) ) {
 			wp_send_json_error( esc_html( $report->get_error_message() ) );
 		}

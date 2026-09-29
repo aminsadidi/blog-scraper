@@ -23,8 +23,12 @@ class Builder {
 	 * @return array|\WP_Error Error code "pnr_skip" means "do not import" (not a failure).
 	 */
 	public static function build( array $item, array $cfg ) {
-		$title = trim( (string) $item['title'] );
-		$link  = (string) $item['link'];
+		$title = Cleaner::clean_title( trim( (string) $item['title'] ), isset( $cfg['title_remove'] ) ? $cfg['title_remove'] : '' );
+		$pairs = Settings::replacements( $cfg );
+		if ( $pairs ) {
+			$title = str_replace( array_keys( $pairs ), array_values( $pairs ), $title );
+		}
+		$link = (string) $item['link'];
 		if ( '' === $title ) {
 			return new \WP_Error( 'pnr_skip', 'خبر عنوان ندارد.' );
 		}
@@ -120,6 +124,12 @@ class Builder {
 		if ( $lead && Util::strlen( $lead ) >= 30 && Util::strlen( $lead ) <= 1200 && false === mb_strpos( Util::normalize_fa( $text ), Util::normalize_fa( Util::substr( $lead, 0, 80 ) ) ) ) {
 			$html = '<p class="pnr-lead"><strong>' . esc_html( $lead ) . '</strong></p>' . "\n" . $html;
 			$text = $lead . ' ' . $text;
+		}
+
+		if ( $pairs ) {
+			$html = Cleaner::replace_text( $html, $pairs );
+			$lead = $lead ? str_replace( array_keys( $pairs ), array_values( $pairs ), $lead ) : $lead;
+			$text = Util::text( $html );
 		}
 
 		$images = Cleaner::image_urls( $html );

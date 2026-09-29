@@ -52,12 +52,8 @@ class Publisher {
 		$final      = Settings::post_status( $cfg );
 		$noindex    = Settings::noindex( $cfg );
 		$now        = time();
-		$timestamp  = ( 'source' === Settings::get( 'date_mode' ) && $p['date'] > 0 && $p['date'] <= $now ) ? $p['date'] : $now;
-
-		$comments = Settings::get( 'comment_status' );
-		if ( ! in_array( $comments, array( 'open', 'closed' ), true ) ) {
-			$comments = get_default_comment_status( 'post' );
-		}
+		$timestamp  = ( 'source' === Settings::date_mode( $cfg ) && $p['date'] > 0 && $p['date'] <= $now ) ? $p['date'] : $now;
+		$comments   = Settings::comment_status( $cfg );
 
 		$meta = array(
 			Items::META                  => (int) $source_id,

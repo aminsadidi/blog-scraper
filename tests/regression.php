@@ -17,12 +17,11 @@ use ParsiNewsRobot\Import\Extractor;
 use ParsiNewsRobot\Import\FeedReader;
 use ParsiNewsRobot\Support\Util;
 
-$pnr_failed = 0;
+$GLOBALS['pnr_failed'] = 0;
 function check( $name, $ok ) {
-	global $pnr_failed;
 	echo ( $ok ? 'PASS ' : 'FAIL ' ) . $name . "\n";
 	if ( ! $ok ) {
-		$pnr_failed++;
+		$GLOBALS['pnr_failed']++;
 	}
 }
 $p = str_repeat('<p>متن خبر اصلی که باید کامل بماند، با جزئیات بیشتر درباره موضوع خبر و نقل قول‌ها.</p>', 8);
@@ -94,4 +93,22 @@ check( 'different story scores < 30%', ParsiNewsRobot\Import\Similarity::score( 
 check( 'sketch survives encode/decode', ParsiNewsRobot\Import\Similarity::decode( ParsiNewsRobot\Import\Similarity::encode( $pnr_a ) ) == $pnr_a );
 check( 'sketch of another format version is ignored', null === ParsiNewsRobot\Import\Similarity::decode( '12:AAAA' ) );
 check( 'short texts are not fingerprinted', null === ParsiNewsRobot\Import\Similarity::sketch( 'خبر کوتاه دو خطی' ) );
-if ( $pnr_failed ) { WP_CLI::error( $pnr_failed . " test(s) failed." ); } WP_CLI::success( "All tests passed." );
+
+// Customisable attribution and links.
+$pnr_html = '<p>متن <a href="https://src.ir/x" data-pnr-link="1">لینک متن</a></p><p class="pnr-source">به نقل از <a href="https://src.ir/" data-pnr-link="attr">منبع</a></p><p><a href="https://mine.ir/">لینک خودم</a></p>';
+$pnr_out  = ParsiNewsRobot\Seo\Links::apply_rel( $pnr_html, 'strip', 'follow', true, false );
+check( 'strip removes source-text links but keeps the attribution link', false === strpos( $pnr_out, 'src.ir/x' ) && false !== strpos( $pnr_out, 'https://src.ir/"' ) );
+check( 'attribution rel "follow" + no new tab: no rel/target on it', 1 === preg_match( '~<a(?![^>]*\b(rel|target)=)[^>]*data-pnr-link="attr"~', $pnr_out ) );
+check( 'links added by editors are never touched', false !== strpos( $pnr_out, '<a href="https://mine.ir/">' ) );
+$pnr_out = ParsiNewsRobot\Seo\Links::apply_rel( $pnr_html, 'nofollow', 'sponsored', true, true );
+check( 'sponsored attribution link', false !== strpos( $pnr_out, 'rel="sponsored nofollow noopener"' ) );
+$pnr_cfg = ParsiNewsRobot\Settings::source_defaults();
+$pnr_cfg['attr_mode'] = 'off';
+check( 'source can switch attribution off', false === ParsiNewsRobot\Settings::attribution( $pnr_cfg )['enabled'] );
+$pnr_cfg['attr_mode'] = 'on';
+$pnr_cfg['attr_position'] = 'start';
+$pnr_a = ParsiNewsRobot\Settings::attribution( $pnr_cfg );
+check( 'source overrides position, inherits the rest', true === $pnr_a['enabled'] && 'start' === $pnr_a['position'] && ParsiNewsRobot\Settings::get( 'attr_link' ) === $pnr_a['link'] );
+check( 'replacements touch text only, never URLs', '<p><a href="https://site.ir/قدیم">جدید</a> جدید</p>' === rawurldecode( ParsiNewsRobot\Import\Cleaner::replace_text( '<p><a href="https://site.ir/قدیم">قدیم</a> قدیم</p>', array( 'قدیم' => 'جدید' ) ) ) );
+check( 'title cleanup removes the agency suffix', 'افزایش قیمت نان در تهران' === ParsiNewsRobot\Import\Cleaner::clean_title( 'افزایش قیمت نان در تهران - ایسنا', "ایسنا" ) );
+if ( $GLOBALS['pnr_failed'] ) { WP_CLI::error( $GLOBALS['pnr_failed'] . " test(s) failed." ); } WP_CLI::success( "All tests passed." );

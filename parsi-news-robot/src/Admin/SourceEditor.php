@@ -70,6 +70,7 @@ class SourceEditor {
 				<a href="#pnr-tab-general" class="active">عمومی</a>
 				<a href="#pnr-tab-cats">دسته‌بندی</a>
 				<a href="#pnr-tab-content">محتوا و تصاویر</a>
+				<a href="#pnr-tab-attr">به نقل از و لینک‌ها</a>
 				<a href="#pnr-tab-publish">انتشار و سئو</a>
 				<a href="#pnr-tab-filters">فیلترها</a>
 				<a href="#pnr-tab-test">تست منبع</a>
@@ -174,6 +175,10 @@ class SourceEditor {
 						<p class="description">اختیاری. اگر تشخیص خودکار درست کار نکرد، انتخابگر CSS بخش متن خبر را وارد کنید (مثلاً <code>.item-text</code> یا <code>#newsMainBody</code>). چند انتخابگر را با کاما جدا کنید.</p></td></tr>
 					<tr><th>بخش‌های حذفی</th><td><?php Form::textarea( $n( 'remove_selectors' ), $c['remove_selectors'], 2, array( 'dir' => 'ltr', 'placeholder' => '.related-news' ) ); ?>
 						<p class="description">اختیاری. انتخابگر بخش‌هایی از متن که باید حذف شوند (هر خط یکی).</p></td></tr>
+					<tr><th>حذف از عنوان</th><td><?php Form::textarea( $n( 'title_remove' ), $c['title_remove'], 2 ); ?>
+						<p class="description">هر خط یک عبارت که از عنوان خبرهای این منبع حذف شود؛ مثلاً « - ایسنا» یا «| خبرگزاری مهر». خط تیره یا جداکننده‌ای که آخر عنوان بماند هم پاک می‌شود.</p></td></tr>
+					<tr><th>جایگزینی کلمات</th><td><?php Form::textarea( $n( 'replacements' ), $c['replacements'], 3 ); ?>
+						<p class="description">هر خط <code>متن قدیم =&gt; متن جدید</code> (بعد از فهرست کلی اعمال می‌شود). برای حذف، سمت راست را خالی بگذارید.</p></td></tr>
 					<tr><th>لید خبر</th><td><?php Form::checkbox( $n( 'include_lead' ), $c['include_lead'], 'لید (خلاصه ابتدای خبر) اگر جدا از متن بود، به اول متن اضافه شود' ); ?></td></tr>
 					<tr><th>به‌روزرسانی خبر</th><td><?php Form::number( $n( 'track_updates_hours' ), $c['track_updates_hours'], 0, 168 ); ?> ساعت
 						<p class="description">اگر منبع خبری را تا این مدت بعد از انتشار تغییر داد (مثل نتیجه زنده بازی)، خبر سایت شما هم به‌روز شود. ۰ = خاموش. خبرهایی که دستی ویرایش کرده‌اید دست نمی‌خورند.</p></td></tr>
@@ -195,6 +200,120 @@ class SourceEditor {
 						<p class="description">برای «به نقل از». خالی = نام همین منبع یا عنوان RSS.</p></td></tr>
 					<tr><th>صفحه اصلی منبع</th><td><?php Form::url( $n( 'source_home' ), $c['source_home'], array( 'placeholder' => 'خودکار' ) ); ?></td></tr>
 					<tr><th>برچسب‌ها</th><td><?php Form::checkbox( $n( 'import_tags' ), $c['import_tags'], 'دسته‌بندی‌های RSS منبع به‌عنوان برچسب اضافه شوند' ); ?></td></tr>
+				</table>
+			</div>
+
+			<div class="pnr-tab" id="pnr-tab-attr">
+				<?php
+				$g       = Settings::get();
+				$labels  = array(
+					'article'   => 'صفحه همان خبر',
+					'home'      => 'صفحه اصلی منبع',
+					'none'      => 'بدون لینک',
+					'nofollow'  => 'nofollow',
+					'follow'    => 'follow',
+					'sponsored' => 'sponsored',
+					'strip'     => 'حذف لینک',
+					'start'     => 'اول متن',
+					'end'       => 'آخر متن',
+					'plain'     => 'متن ساده',
+					'bold'      => 'پررنگ',
+					'small'     => 'کوچک و کم‌رنگ',
+					'box'       => 'داخل کادر',
+				);
+				$default = function ( $key ) use ( $g, $labels ) {
+					$value = $g[ $key ];
+					return 'طبق تنظیمات کلی (' . ( isset( $labels[ $value ] ) ? $labels[ $value ] : $value ) . ')';
+				};
+				?>
+				<p class="description">هر گزینه روی «طبق تنظیمات کلی» باشد، از <a href="<?php echo esc_url( admin_url( 'admin.php?page=pnr-settings' ) ); ?>">تنظیمات</a> خوانده می‌شود. نتیجه را در تب «تست منبع» زیر هر خبر می‌بینید.</p>
+				<table class="form-table">
+					<tr><th>نوشتن «به نقل از»</th><td>
+						<?php
+						Form::select(
+							$n( 'attr_mode' ),
+							$c['attr_mode'],
+							array(
+								'inherit' => 'طبق تنظیمات کلی (' . ( $g['attr_enabled'] ? 'نوشته شود' : 'نوشته نشود' ) . ')',
+								'on'      => 'نوشته شود',
+								'off'     => 'نوشته نشود',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>متن</th><td><?php Form::text( $n( 'attr_template' ), $c['attr_template'], array( 'placeholder' => $g['attr_template'] ) ); ?>
+						<p class="description">خالی = متن کلی. برچسب‌ها: <code>{source}</code> <code>{title}</code> <code>{date}</code> <code>{url}</code></p></td></tr>
+					<tr><th>جای قرارگیری</th><td>
+						<?php
+						Form::select(
+							$n( 'attr_position' ),
+							$c['attr_position'],
+							array(
+								'inherit' => $default( 'attr_position' ),
+								'start'   => 'اول متن',
+								'end'     => 'آخر متن',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>لینک به</th><td>
+						<?php
+						Form::select(
+							$n( 'attr_link' ),
+							$c['attr_link'],
+							array(
+								'inherit' => $default( 'attr_link' ),
+								'article' => 'صفحه همان خبر در سایت منبع',
+								'home'    => 'صفحه اصلی سایت منبع',
+								'none'    => 'بدون لینک',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>نوع لینک «به نقل از»</th><td>
+						<?php
+						Form::select(
+							$n( 'attr_rel' ),
+							$c['attr_rel'],
+							array(
+								'inherit'   => $default( 'attr_rel' ),
+								'nofollow'  => 'nofollow',
+								'follow'    => 'follow',
+								'sponsored' => 'sponsored',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>ظاهر</th><td>
+						<?php
+						Form::select(
+							$n( 'attr_style' ),
+							$c['attr_style'],
+							array(
+								'inherit' => $default( 'attr_style' ),
+								'plain'   => 'متن ساده',
+								'bold'    => 'پررنگ',
+								'small'   => 'کوچک و کم‌رنگ',
+								'box'     => 'داخل کادر',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>لینک‌های داخل متن خبر</th><td>
+						<?php
+						Form::select(
+							$n( 'links_mode' ),
+							$c['links_mode'],
+							array(
+								'inherit'  => $default( 'links_mode' ),
+								'nofollow' => 'nofollow',
+								'follow'   => 'follow',
+								'strip'    => 'حذف لینک (متن بماند)',
+							)
+						);
+						?>
+						<p class="description">فقط لینک‌هایی که از متن منبع آمده‌اند؛ لینک‌هایی که خودتان اضافه کنید دست نمی‌خورند.</p>
+					</td></tr>
 				</table>
 			</div>
 
@@ -228,6 +347,32 @@ class SourceEditor {
 						);
 						?>
 					</td></tr>
+					<tr><th>تاریخ خبر</th><td>
+						<?php
+						Form::select(
+							$n( 'date_mode' ),
+							$c['date_mode'],
+							array(
+								'inherit' => 'طبق تنظیمات کلی',
+								'source'  => 'تاریخ انتشار در منبع',
+								'import'  => 'زمان دریافت',
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>دیدگاه‌ها</th><td>
+						<?php
+						Form::select(
+							$n( 'comment_status' ),
+							$c['comment_status'],
+							array(
+								'inherit' => 'طبق تنظیمات کلی',
+								'open'    => 'باز',
+								'closed'  => 'بسته',
+							)
+						);
+						?>
+					</td></tr>
 					<tr><th>وضعیت انتشار</th><td>
 						<?php
 						Form::select(
@@ -252,6 +397,19 @@ class SourceEditor {
 					<tr><th>خبرهای شامل این کلمات وارد نشوند</th><td><?php Form::textarea( $n( 'exclude_keywords' ), $c['exclude_keywords'], 3 ); ?></td></tr>
 					<tr><th>حداقل طول متن</th><td><?php Form::number( $n( 'min_words' ), $c['min_words'], 0, 5000 ); ?> کلمه <span class="description">(۰ = بدون محدودیت)</span></td></tr>
 					<tr><th>تصویر</th><td><?php Form::checkbox( $n( 'require_image' ), $c['require_image'], 'خبرهای بدون تصویر وارد نشوند' ); ?></td></tr>
+					<tr><th>خبر تکراری</th><td>
+						<?php
+						Form::select(
+							$n( 'dup_mode' ),
+							$c['dup_mode'],
+							array(
+								'inherit' => 'طبق تنظیمات کلی (بررسی عنوان و متن)',
+								'off'     => 'برای این منبع بررسی نشود',
+							)
+						);
+						?>
+						<p>حداقل شباهت متن برای این منبع: <?php Form::number( $n( 'content_dup_threshold' ), $inherit( $c['content_dup_threshold'] ), 50, 100, array( 'placeholder' => 'پیش‌فرض' ) ); ?>٪ <span class="description">(خالی = <?php echo esc_html( number_format_i18n( (int) Settings::get( 'content_dup_threshold' ) ) ); ?>٪)</span></p>
+					</td></tr>
 				</table>
 				<p class="description">قوانین کلمه کلیدی مشترک بین همه منابع (مثلاً «هر خبری که «فوری» دارد به تیتر یک برود») در صفحه <a href="<?php echo esc_url( admin_url( 'admin.php?page=pnr-rules' ) ); ?>">قوانین</a> تعریف می‌شوند.</p>
 			</div>
@@ -334,7 +492,16 @@ class SourceEditor {
 			if ( $row['featured'] ) {
 				printf( '<img class="pnr-preview-featured" src="%s" alt="" referrerpolicy="no-referrer">', esc_url( $row['featured'] ) );
 			}
-			echo wp_kses( $row['content'], \ParsiNewsRobot\Import\Cleaner::allowed_html() );
+			$allowed        = \ParsiNewsRobot\Import\Cleaner::allowed_html();
+			$allowed['a']  += array( 'data-pnr-link' => true );
+			$attribution    = ! empty( $row['attribution'] ) ? '<div class="pnr-preview-attr">' . wp_kses( $row['attribution'], $allowed ) . '</div>' : '';
+			if ( 'start' === $row['attr_position'] ) {
+				echo $attribution; // phpcs:ignore WordPress.Security.EscapeOutput -- kses above.
+			}
+			echo wp_kses( $row['content'], $allowed );
+			if ( 'start' !== $row['attr_position'] ) {
+				echo $attribution; // phpcs:ignore WordPress.Security.EscapeOutput -- kses above.
+			}
 			echo '</div></div>';
 		}
 		echo '<p class="description">اگر متن ناقص است یا بخش‌های اضافه دارد، در تب «محتوا و تصاویر» انتخابگر متن یا بخش‌های حذفی را تنظیم کنید و دوباره تست کنید. تغییرات را فراموش نکنید ذخیره کنید.</p>';
@@ -378,6 +545,19 @@ class SourceEditor {
 			'delete_after'        => Form::int( $in, 'delete_after', 0, 3650, -1 ),
 
 			'source_name'         => Form::text_value( $in, 'source_name' ),
+			'title_remove'        => isset( $in['title_remove'] ) ? sanitize_textarea_field( $in['title_remove'] ) : '',
+			'replacements'        => Form::textarea_value( $in, 'replacements' ),
+			'attr_mode'           => Form::choice( $in, 'attr_mode', array( 'inherit', 'on', 'off' ), 'inherit' ),
+			'attr_template'       => Form::text_value( $in, 'attr_template' ),
+			'attr_position'       => Form::choice( $in, 'attr_position', array( 'inherit', 'start', 'end' ), 'inherit' ),
+			'attr_link'           => Form::choice( $in, 'attr_link', array( 'inherit', 'article', 'home', 'none' ), 'inherit' ),
+			'attr_rel'            => Form::choice( $in, 'attr_rel', array( 'inherit', 'nofollow', 'follow', 'sponsored' ), 'inherit' ),
+			'attr_style'          => Form::choice( $in, 'attr_style', array( 'inherit', 'plain', 'bold', 'small', 'box' ), 'inherit' ),
+			'links_mode'          => Form::choice( $in, 'links_mode', array( 'inherit', 'nofollow', 'follow', 'strip' ), 'inherit' ),
+			'dup_mode'            => Form::choice( $in, 'dup_mode', array( 'inherit', 'off' ), 'inherit' ),
+			'content_dup_threshold' => Form::int( $in, 'content_dup_threshold', 50, 100, -1 ),
+			'comment_status'      => Form::choice( $in, 'comment_status', array( 'inherit', 'open', 'closed' ), 'inherit' ),
+			'date_mode'           => Form::choice( $in, 'date_mode', array( 'inherit', 'source', 'import' ), 'inherit' ),
 			'source_home'         => isset( $in['source_home'] ) ? esc_url_raw( trim( $in['source_home'] ) ) : '',
 			'author'              => Form::int( $in, 'author', 0 ),
 			'post_status'         => Form::choice( $in, 'post_status', array( 'inherit', 'publish', 'pending', 'draft' ), 'inherit' ),

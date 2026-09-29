@@ -138,16 +138,17 @@ class Similarity {
 	 * @param int $exclude_post Post to ignore (the one being updated).
 	 * @return array{post_id: int, score: float, own: bool}|null own = a post written on the site itself.
 	 */
-	public static function find( $text, $exclude_post = 0 ) {
-		$s = Settings::get();
-		if ( empty( $s['content_dup'] ) ) {
+	public static function find( $text, $exclude_post = 0, ?array $cfg = null ) {
+		$s   = Settings::get();
+		$dup = Settings::duplicates( $cfg ? $cfg : Settings::source_defaults() );
+		if ( ! $dup['content'] ) {
 			return null;
 		}
 		$sketch = self::sketch( $text );
 		if ( ! $sketch ) {
 			return null;
 		}
-		$threshold = max( 50, min( 100, (int) $s['content_dup_threshold'] ) ) / 100;
+		$threshold = max( 50, min( 100, $dup['threshold'] ) ) / 100;
 		$since     = time() - max( 1, (int) $s['dup_hours'] ) * HOUR_IN_SECONDS;
 		$best      = null;
 
