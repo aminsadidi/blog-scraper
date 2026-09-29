@@ -24,10 +24,32 @@ class Importer {
 	 */
 	public static function import( $seen_id ) {
 		$row = Seen::get( $seen_id );
-		if ( ! $row || 'queued' !== $row->status ) {
-			return null;
+		if ( ! $row || 'queued' !== $row->status || ! Seen::claim( $row->id ) ) {
+			return null; // Already handled, or another runner just took it.
 		}
 		$source_id = (int) $row->source_id;
+
+		// An earlier attempt may have died half way (PHP time limit): finish or discard what it left.
+		$previous = Items::by_seen( $row->id );
+		if ( $previous ) {
+			$post = get_post( $previous->post_id );
+			if ( $post && 'draft' !== $post->post_status ) {
+				Seen::update(
+					$row->id,
+					array(
+						'status'  => 'imported',
+						'post_id' => (int) $post->ID,
+						'payload' => null,
+					)
+				);
+				return (int) $post->ID;
+			}
+			if ( $post ) {
+				\ParsiNewsRobot\Media\Media::delete_post_media( $post->ID );
+				wp_delete_post( $post->ID, true );
+			}
+			Items::delete( $previous->post_id );
+		}
 		if ( ! Sources::exists( $source_id ) ) {
 			Seen::update(
 				$row->id,
@@ -107,6 +129,7 @@ class Importer {
 			Seen::update(
 				$row->id,
 				array(
+					'status'   => 'queued',
 					'attempts' => $attempts,
 					'note'     => $prepared->get_error_message(),
 				)

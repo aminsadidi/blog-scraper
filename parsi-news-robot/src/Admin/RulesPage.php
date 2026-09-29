@@ -102,7 +102,18 @@ class RulesPage {
 		check_admin_referer( 'pnr_save_rules' );
 		$rules = Rules::from_input( isset( $_POST['rules'] ) ? $_POST['rules'] : array() ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		Settings::update( array( 'rules' => $rules ) );
-		Admin::flash( sprintf( '%s قانون ذخیره شد.', number_format_i18n( count( $rules ) ) ) );
+		$sections = Settings::terms_with_role( 'section' );
+		$problems = 0;
+		foreach ( $rules as $rule ) {
+			if ( ( 'section' === $rule['action'] && ! in_array( (int) $rule['term'], $sections, true ) ) || ( 'category' === $rule['action'] && ! $rule['term'] ) ) {
+				$problems++;
+			}
+		}
+		if ( $problems ) {
+			Admin::flash( sprintf( 'قوانین ذخیره شد، ولی %s قانون دسته درستی ندارد: برای «قرار دادن در بخش» باید دسته‌ای با نقش «بخش صفحه اصلی» انتخاب شود و برای «افزودن دسته» یک دسته.', number_format_i18n( $problems ) ), 'warning' );
+		} else {
+			Admin::flash( sprintf( '%s قانون ذخیره شد.', number_format_i18n( count( $rules ) ) ) );
+		}
 		wp_safe_redirect( admin_url( 'admin.php?page=pnr-rules' ) );
 		exit;
 	}

@@ -159,7 +159,7 @@ class Admin {
 		self::guard( 'pnr_run_all' );
 		self::extend();
 		Queue::tick( true );
-		$done = Queue::run_pending( 100 );
+		$done = Queue::run_pending( 20 ); // The rest continues in the background.
 		self::flash( sprintf( 'همه منابع بررسی شد (%s کار انجام شد). جزئیات در گزارش‌ها.', number_format_i18n( $done ) ) );
 		self::back( admin_url( 'admin.php?page=' . self::SLUG ) );
 	}

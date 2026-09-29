@@ -81,6 +81,50 @@ class FeedReader {
 		if ( '' === trim( (string) $xml ) ) {
 			return new \WP_Error( 'pnr_feed_empty', 'فید خالی است.' );
 		}
+		$feed = self::simplepie( $xml );
+		if ( is_wp_error( $feed ) ) {
+			// Many news sites publish slightly broken XML; repair the usual problems and try once more.
+			$repaired = self::repair( $xml );
+			if ( $repaired !== $xml ) {
+				$second = self::simplepie( $repaired );
+				if ( ! is_wp_error( $second ) ) {
+					return $second;
+				}
+			}
+		}
+		return $feed;
+	}
+
+	/**
+	 * Fixes BOM / text before the XML declaration, control characters, bare "&" and HTML-only entities.
+	 */
+	public static function repair( $xml ) {
+		$xml = preg_replace( '/^\xEF\xBB\xBF/', '', (string) $xml );
+		$pos = strpos( $xml, '<' );
+		if ( $pos > 0 ) {
+			$xml = substr( $xml, $pos );
+		}
+		$xml = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $xml );
+		$xml = preg_replace( '/&(?!(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);)/', '&amp;', $xml );
+		// Named entities other than XML's five are undefined in XML: turn them into characters.
+		$xml = preg_replace_callback(
+			'/&([A-Za-z][A-Za-z0-9]*);/',
+			function ( $m ) {
+				if ( in_array( $m[1], array( 'amp', 'lt', 'gt', 'quot', 'apos' ), true ) ) {
+					return $m[0];
+				}
+				$char = html_entity_decode( $m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				return $char === $m[0] ? '&amp;' . $m[1] . ';' : htmlspecialchars( $char, ENT_XML1, 'UTF-8' );
+			},
+			$xml
+		);
+		return $xml;
+	}
+
+	/**
+	 * @return object|\WP_Error
+	 */
+	private static function simplepie( $xml ) {
 		if ( ! class_exists( '\SimplePie\SimplePie' ) && ! class_exists( '\SimplePie', false ) ) {
 			require_once ABSPATH . WPINC . '/class-simplepie.php';
 		}

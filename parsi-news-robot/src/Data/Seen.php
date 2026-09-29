@@ -46,7 +46,7 @@ class Seen {
 			$row['payload'] = wp_json_encode( $row['payload'] );
 		}
 		$row['title_norm'] = \ParsiNewsRobot\Support\Util::substr( (string) $row['title_norm'], 0, 250 );
-		$row['note']       = \ParsiNewsRobot\Support\Util::substr( (string) $row['note'], 0, 250 );
+		$row['note']       = \ParsiNewsRobot\Support\Util::db_safe( \ParsiNewsRobot\Support\Util::substr( (string) $row['note'], 0, 250 ), self::table(), 'note' );
 
 		$ok = $wpdb->insert( self::table(), $row ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		return $ok ? (int) $wpdb->insert_id : 0;
@@ -68,13 +68,22 @@ class Seen {
 		return $wpdb->get_row( $wpdb->prepare( 'SELECT id, source_id, status, post_id, feed_sig, created_at FROM ' . self::table() . ' WHERE item_hash = %s', $hash ) ); // phpcs:ignore WordPress.DB
 	}
 
+	/**
+	 * Atomically moves a queued entry to "processing"; only one runner can win it.
+	 */
+	public static function claim( $id ) {
+		global $wpdb;
+		$done = $wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table() . " SET status = 'processing', scheduled_at = %d WHERE id = %d AND status = 'queued'", time(), (int) $id ) ); // phpcs:ignore WordPress.DB
+		return 1 === (int) $done;
+	}
+
 	public static function update( $id, array $data ) {
 		global $wpdb;
 		if ( isset( $data['payload'] ) && is_array( $data['payload'] ) ) {
 			$data['payload'] = wp_json_encode( $data['payload'] );
 		}
 		if ( isset( $data['note'] ) ) {
-			$data['note'] = \ParsiNewsRobot\Support\Util::substr( (string) $data['note'], 0, 250 );
+			$data['note'] = \ParsiNewsRobot\Support\Util::db_safe( \ParsiNewsRobot\Support\Util::substr( (string) $data['note'], 0, 250 ), self::table(), 'note' );
 		}
 		$wpdb->update( self::table(), $data, array( 'id' => (int) $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
@@ -86,12 +95,12 @@ class Seen {
 	 */
 	public static function recent_titles( $since, $limit = 3000 ) {
 		global $wpdb;
-		return $wpdb->get_results( $wpdb->prepare( 'SELECT id, title_norm, title_hash, status, post_id FROM ' . self::table() . " WHERE created_at >= %d AND status IN ('queued','imported') ORDER BY id DESC LIMIT %d", (int) $since, (int) $limit ) ); // phpcs:ignore WordPress.DB
+		return $wpdb->get_results( $wpdb->prepare( 'SELECT id, title_norm, title_hash, status, post_id FROM ' . self::table() . " WHERE created_at >= %d AND status IN ('queued','processing','imported') ORDER BY id DESC LIMIT %d", (int) $since, (int) $limit ) ); // phpcs:ignore WordPress.DB
 	}
 
 	public static function by_title_hash( $hash, $since, $exclude_id = 0 ) {
 		global $wpdb;
-		return $wpdb->get_row( $wpdb->prepare( 'SELECT id, status, post_id FROM ' . self::table() . " WHERE title_hash = %s AND created_at >= %d AND id <> %d AND status IN ('queued','imported') ORDER BY id ASC LIMIT 1", $hash, (int) $since, (int) $exclude_id ) ); // phpcs:ignore WordPress.DB
+		return $wpdb->get_row( $wpdb->prepare( 'SELECT id, status, post_id FROM ' . self::table() . " WHERE title_hash = %s AND created_at >= %d AND id <> %d AND status IN ('queued','processing','imported') ORDER BY id ASC LIMIT 1", $hash, (int) $since, (int) $exclude_id ) ); // phpcs:ignore WordPress.DB
 	}
 
 	public static function counts_by_status( $since = 0 ) {
@@ -107,9 +116,9 @@ class Seen {
 	public static function queued_count( $source_id = 0 ) {
 		global $wpdb;
 		if ( $source_id ) {
-			return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . self::table() . " WHERE status = 'queued' AND source_id = %d", (int) $source_id ) ); // phpcs:ignore WordPress.DB
+			return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . self::table() . " WHERE status IN ('queued','processing') AND source_id = %d", (int) $source_id ) ); // phpcs:ignore WordPress.DB
 		}
-		return (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() . " WHERE status = 'queued'" ); // phpcs:ignore WordPress.DB
+		return (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() . " WHERE status IN ('queued','processing')" ); // phpcs:ignore WordPress.DB
 	}
 
 	/**
@@ -117,11 +126,11 @@ class Seen {
 	 */
 	public static function prune( $days ) {
 		global $wpdb;
-		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . " WHERE created_at < %d AND status <> 'queued'", time() - max( 7, (int) $days ) * DAY_IN_SECONDS ) ); // phpcs:ignore WordPress.DB
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . " WHERE created_at < %d AND status NOT IN ('queued','processing')", time() - max( 7, (int) $days ) * DAY_IN_SECONDS ) ); // phpcs:ignore WordPress.DB
 	}
 
 	public static function delete_source( $source_id ) {
 		global $wpdb;
-		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . " WHERE source_id = %d AND status = 'queued'", (int) $source_id ) ); // phpcs:ignore WordPress.DB
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::table() . " WHERE source_id = %d AND status IN ('queued','processing')", (int) $source_id ) ); // phpcs:ignore WordPress.DB
 	}
 }

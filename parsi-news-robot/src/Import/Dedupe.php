@@ -20,9 +20,19 @@ class Dedupe {
 	/**
 	 * Hash that identifies a feed entry across sources (link without tracking parameters, else guid).
 	 */
-	public static function item_hash( $link, $guid ) {
+	/**
+	 * @param bool $shared_link The feed gives several entries the same link (broken feeds that point every
+	 *                          item to the home page): then guid + title identify the entry instead.
+	 */
+	public static function item_hash( $link, $guid, $title = '', $shared_link = false ) {
 		$link = self::canonical_link( $link );
-		return md5( $link ? $link : 'guid:' . (string) $guid );
+		if ( ! $link ) {
+			return md5( 'guid:' . (string) $guid );
+		}
+		if ( $shared_link ) {
+			return md5( 'guid:' . (string) $guid . '|' . self::title_norm( $title ) . '|' . $link );
+		}
+		return md5( $link );
 	}
 
 	public static function canonical_link( $link ) {
@@ -94,6 +104,10 @@ class Dedupe {
 			return null;
 		}
 		$since = time() - max( 1, (int) Settings::get( 'dup_hours' ) ) * HOUR_IN_SECONDS;
+		// Short recurring titles ("عکس روز", "کاریکاتور") are different stories every day.
+		if ( count( array_unique( self::words( $title ) ) ) < 3 ) {
+			return null;
+		}
 		$exact = Seen::by_title_hash( self::title_hash( $title ), $since, $exclude_id );
 		if ( $exact ) {
 			$exact->score = 1.0;

@@ -44,9 +44,24 @@ class Util {
 		// Twice: some feeds double-encode (&amp;#8238;).
 		$text = html_entity_decode( html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		// Bidi control characters and zero-width spaces (ZWNJ is kept: it is part of Persian spelling).
+		// Decoded entities may form new tags (&lt;script&gt;): strip again, this text is saved unfiltered.
+		$text = wp_strip_all_tags( $text );
 		$text = preg_replace( '/[\x{200B}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]/u', '', $text );
 		$text = str_replace( "\xC2\xA0", ' ', $text );
 		return trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
+	}
+
+	/**
+	 * Drops 4-byte characters (emoji) when a table still uses the 3-byte "utf8" charset, where they would
+	 * make the whole INSERT fail.
+	 */
+	public static function db_safe( $text, $table, $column ) {
+		global $wpdb;
+		$charset = $wpdb->get_col_charset( $table, $column );
+		if ( is_string( $charset ) && 'utf8mb4' !== $charset ) {
+			$text = preg_replace( '/[\x{10000}-\x{10FFFF}]/u', '', (string) $text );
+		}
+		return (string) $text;
 	}
 
 	/**
@@ -180,7 +195,11 @@ class Util {
 	 * Percent-decoded, lower-cased path without surrounding slashes, used for redirect lookups.
 	 */
 	public static function normalize_path( $url ) {
-		$path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
+		$path  = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
+		$query = (string) wp_parse_url( (string) $url, PHP_URL_QUERY );
+		if ( '' === trim( $path, '/' ) && preg_match( '/(?:^|&)(p|page_id)=(\d+)/', $query, $m ) ) {
+			return '?' . $m[1] . '=' . $m[2]; // Plain permalinks: ?p=123.
+		}
 		$path = rawurldecode( $path );
 		$path = function_exists( 'mb_strtolower' ) ? mb_strtolower( $path, 'UTF-8' ) : strtolower( $path );
 		return trim( $path, '/' );

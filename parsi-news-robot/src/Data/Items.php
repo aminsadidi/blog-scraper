@@ -41,6 +41,7 @@ class Items {
 			),
 			$row
 		);
+		$row['source_name'] = \ParsiNewsRobot\Support\Util::db_safe( \ParsiNewsRobot\Support\Util::substr( (string) $row['source_name'], 0, 190 ), self::table(), 'source_name' );
 		$wpdb->replace( self::table(), $row ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		wp_cache_delete( (int) $row['post_id'], 'pnr_items' );
 	}
@@ -68,6 +69,14 @@ class Items {
 		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . self::table() . ' WHERE post_id = %d', $post_id ) ); // phpcs:ignore WordPress.DB
 		wp_cache_set( $post_id, $row ? $row : 0, 'pnr_items' );
 		return $row ? $row : null;
+	}
+
+	/**
+	 * @return object|null The row created for a seen entry (a previous, interrupted attempt).
+	 */
+	public static function by_seen( $seen_id ) {
+		global $wpdb;
+		return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . self::table() . ' WHERE seen_id = %d LIMIT 1', (int) $seen_id ) ); // phpcs:ignore WordPress.DB
 	}
 
 	public static function delete( $post_id ) {

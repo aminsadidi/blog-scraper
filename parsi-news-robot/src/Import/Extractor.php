@@ -152,10 +152,21 @@ class Extractor {
 			'video'       => '',
 			'description' => '',
 			'method'      => '',
+			'base'        => $url,
 		);
 
 		$doc = Dom::load( $html, true );
 		$xp  = new \DOMXPath( $doc );
+
+		// <base href> changes how every relative URL of the page resolves.
+		$base = $xp->query( '//head/base[@href]' )->item( 0 );
+		if ( $base ) {
+			$resolved = Util::absolute_url( $base->getAttribute( 'href' ), $url );
+			if ( $resolved ) {
+				$result['base'] = $resolved;
+				$url            = $resolved;
+			}
+		}
 
 		$jsonld                = self::json_ld( $xp );
 		$result['image']       = Util::absolute_url( self::meta( $xp, array( 'og:image', 'og:image:url', 'twitter:image', 'twitter:image:src' ) ), $url );
@@ -171,7 +182,14 @@ class Extractor {
 		// Lead first: it often lives in the header, which is removed below.
 		if ( ! isset( $cfg['include_lead'] ) || $cfg['include_lead'] ) {
 			foreach ( self::LEAD as $selector ) {
-				foreach ( Dom::select( $xp, $selector ) as $node ) {
+				$matches = Dom::select( $xp, $selector );
+				if ( count( $matches ) > 2 ) {
+					continue; // A class used by a list of teasers, not this story's lead.
+				}
+				foreach ( $matches as $node ) {
+					if ( self::in_teaser_box( $node ) ) {
+						continue;
+					}
 					$len = Dom::text_length( $node );
 					if ( $len >= 30 && $len <= 1200 ) {
 						$result['lead'] = Util::text( $node->textContent );
@@ -241,6 +259,21 @@ class Extractor {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Whether a node sits in a list item, sidebar, navigation or related/most-read box.
+	 */
+	private static function in_teaser_box( \DOMNode $node ) {
+		for ( $n = $node->parentNode; $n instanceof \DOMElement; $n = $n->parentNode ) {
+			if ( in_array( strtolower( $n->nodeName ), array( 'li', 'aside', 'nav', 'footer' ), true ) ) {
+				return true;
+			}
+			if ( preg_match( '/sidebar|side-bar|related|most|popular|teaser|widget|list|latest|slider/i', $n->getAttribute( 'class' ) . ' ' . $n->getAttribute( 'id' ) ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

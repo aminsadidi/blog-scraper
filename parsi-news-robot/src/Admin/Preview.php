@@ -34,7 +34,12 @@ class Preview {
 			'items'      => array(),
 		);
 
+		$started = time();
 		foreach ( array_slice( $feed['items'], 0, max( 1, min( 5, (int) $limit ) ) ) as $item ) {
+			// Stay inside the host's PHP time limit (often 30 s) even when the source is slow.
+			if ( $report['items'] && time() - $started > 20 ) {
+				break;
+			}
 			$row   = array(
 				'title' => $item['title'],
 				'link'  => $item['link'],
@@ -60,7 +65,9 @@ class Preview {
 			$row['categories']  = $names;
 			$row['text']        = $built['text'];
 			$row['content']     = $built['content'];
-			$row['duplicate']   = Dedupe::find_similar( $item['title'] ) ? true : false;
+			$seen               = \ParsiNewsRobot\Data\Seen::by_hash( Dedupe::item_hash( $item['link'], $item['guid'], $item['title'], count( wp_list_pluck( $feed['items'], 'link' ) ) !== count( array_unique( wp_list_pluck( $feed['items'], 'link' ) ) ) ) );
+			$row['already']     = $seen ? $seen->status : '';
+			$row['duplicate']   = ! $seen && Dedupe::find_similar( $item['title'] );
 			$report['items'][]  = $row;
 		}
 		return $report;

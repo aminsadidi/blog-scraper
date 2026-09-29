@@ -52,7 +52,14 @@ class Seo {
 	public static function current_is_noindex() {
 		if ( is_singular() ) {
 			$post = get_queried_object();
-			return $post instanceof \WP_Post && self::is_noindex( $post->ID );
+			if ( ! $post instanceof \WP_Post ) {
+				return false;
+			}
+			// Attachment pages of the robot's images follow their post.
+			if ( 'attachment' === $post->post_type && $post->post_parent ) {
+				return self::is_noindex( $post->post_parent );
+			}
+			return self::is_noindex( $post->ID );
 		}
 		$cats = array_map( 'intval', (array) Settings::get( 'noindex_categories' ) );
 		return $cats && is_category( $cats );
@@ -166,7 +173,7 @@ class Seo {
 	public static function apply( $post_id, $noindex ) {
 		if ( $noindex ) {
 			update_post_meta( $post_id, self::FLAG, '1' );
-			update_post_meta( $post_id, 'rank_math_robots', array( 'noindex', 'follow' ) );
+			update_post_meta( $post_id, 'rank_math_robots', array( 'noindex' ) );
 		} else {
 			delete_post_meta( $post_id, self::FLAG );
 			$rm = get_post_meta( $post_id, 'rank_math_robots', true );
@@ -182,7 +189,7 @@ class Seo {
 	public static function insert_meta( $noindex ) {
 		return $noindex ? array(
 			self::FLAG         => '1',
-			'rank_math_robots' => array( 'noindex', 'follow' ),
+			'rank_math_robots' => array( 'noindex' ),
 		) : array();
 	}
 

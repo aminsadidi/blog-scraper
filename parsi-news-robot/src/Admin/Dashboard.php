@@ -140,6 +140,8 @@ class Dashboard {
 			$state = Sources::state( $id );
 			if ( ! $cfg['main_category'] ) {
 				$checks[] = array( 'warn', sprintf( 'منبع «%s» دسته اصلی ندارد.', Sources::name( $id, $cfg ) ) );
+			} elseif ( ! term_exists( (int) $cfg['main_category'], 'category' ) ) {
+				$checks[] = array( 'error', sprintf( 'دسته اصلی منبع «%s» حذف شده است؛ یک دسته دیگر انتخاب کنید.', Sources::name( $id, $cfg ) ) );
 			}
 			if ( (int) $state['error_runs'] >= 3 ) {
 				$checks[] = array( 'error', sprintf( 'منبع «%1$s» %2$s بار پشت سر هم خطا داده: %3$s', Sources::name( $id, $cfg ), number_format_i18n( $state['error_runs'] ), $state['last_message'] ) );

@@ -135,7 +135,11 @@ class Installer {
 			) $c;"
 		);
 
-		update_option( 'pnr_db_version', PNR_DB_VERSION, false );
+		// Read on every request by maybe_upgrade(), so it must be autoloaded (no extra query per page view).
+		update_option( 'pnr_db_version', PNR_DB_VERSION, true );
+		if ( function_exists( 'wp_set_option_autoload' ) ) {
+			wp_set_option_autoload( 'pnr_db_version', true ); // Older installs created it without autoload.
+		}
 	}
 
 	/**

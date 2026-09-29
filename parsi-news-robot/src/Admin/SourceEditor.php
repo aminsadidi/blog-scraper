@@ -318,6 +318,11 @@ class SourceEditor {
 			printf( '<li>عکس‌های متن: %s</li>', esc_html( number_format_i18n( $row['image_count'] ) ) );
 			printf( '<li>ویدئو: %s</li>', $row['has_video'] ? 'دارد' : 'ندارد' );
 			printf( '<li>دسته‌ها: %s</li>', esc_html( implode( '، ', $row['categories'] ) ) );
+			if ( 'imported' === $row['already'] ) {
+				echo '<li class="pnr-warn">این خبر قبلاً وارد و منتشر شده است.</li>';
+			} elseif ( $row['already'] ) {
+				echo '<li class="pnr-warn">این خبر قبلاً بررسی شده و دوباره وارد نمی‌شود.</li>';
+			}
 			if ( $row['duplicate'] ) {
 				echo '<li class="pnr-warn">این خبر مشابه خبری است که قبلاً وارد شده و منتشر نمی‌شود.</li>';
 			}

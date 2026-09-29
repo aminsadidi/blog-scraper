@@ -81,8 +81,10 @@ class Fetcher {
 			// "0 = no limit" still stops at 45 days: the seen table forgets entries after 60 days, and an older
 			// entry still sitting in a feed must not be imported a second time.
 			$max_age = $now - ( (int) $cfg['max_age_hours'] > 0 ? (int) $cfg['max_age_hours'] * HOUR_IN_SECONDS : 45 * DAY_IN_SECONDS );
+			$link_count = array_count_values( array_filter( wp_list_pluck( $feed['items'], 'link' ) ) );
 			foreach ( $feed['items'] as $item ) {
-				$hash     = Dedupe::item_hash( $item['link'], $item['guid'] );
+				$shared   = $item['link'] && $link_count[ $item['link'] ] > 1;
+				$hash     = Dedupe::item_hash( $item['link'], $item['guid'], $item['title'], $shared );
 				$sig      = self::signature( $item );
 				$existing = Seen::by_hash( $hash );
 

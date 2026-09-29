@@ -34,7 +34,10 @@ class Queue {
 		add_action( self::CLEANUP, array( Cleanup::class, 'run' ) );
 		add_action( self::SYNC, array( Seo::class, 'sync_all' ) );
 
-		add_action( 'init', array( __CLASS__, 'ensure_schedules' ), 20 );
+		// Checked only where it matters, so visitors' page views never pay for it.
+		if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			add_action( 'init', array( __CLASS__, 'ensure_schedules' ), 20 );
+		}
 		add_action( 'init', array( __CLASS__, 'external_cron' ), 5 );
 	}
 
@@ -110,6 +113,7 @@ class Queue {
 	}
 
 	public static function schedule_sync() {
+		delete_option( 'pnr_sync_cursor' ); // New settings: every post must be re-checked from the start.
 		if ( ! self::available() ) {
 			Seo::sync_all();
 			return;

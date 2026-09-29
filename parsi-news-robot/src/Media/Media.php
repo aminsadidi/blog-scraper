@@ -45,9 +45,13 @@ class Media {
 		if ( is_array( $size ) && count( $size ) >= 2 ) {
 			$max = array( (int) $size[0], (int) $size[1] );
 		} elseif ( is_string( $size ) && 'full' !== $size ) {
-			$sizes = wp_get_registered_image_subsizes();
-			if ( isset( $sizes[ $size ] ) ) {
-				$max = array( (int) $sizes[ $size ]['width'], (int) $sizes[ $size ]['height'] );
+			// Only width/height are needed (autoloaded options), not wp_get_registered_image_subsizes(),
+			// which also looks up *_crop options that do not exist and costs a query each on every page view.
+			$extra = wp_get_additional_image_sizes();
+			if ( isset( $extra[ $size ] ) ) {
+				$max = array( (int) $extra[ $size ]['width'], (int) $extra[ $size ]['height'] );
+			} elseif ( in_array( $size, get_intermediate_image_sizes(), true ) ) {
+				$max = array( (int) get_option( $size . '_size_w' ), (int) get_option( $size . '_size_h' ) );
 			}
 		}
 		if ( $max ) {
@@ -110,6 +114,13 @@ class Media {
 		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			wp_delete_file( $tmp );
 			return new \WP_Error( 'pnr_image_http', 'دانلود تصویر ناموفق بود (کد ' . (int) wp_remote_retrieve_response_code( $response ) . ').' );
+		}
+
+		// WordPress silently cuts a download at limit_response_size; a cut image is a corrupt image.
+		clearstatcache( true, $tmp );
+		if ( filesize( $tmp ) >= 15 * MB_IN_BYTES ) {
+			wp_delete_file( $tmp );
+			return new \WP_Error( 'pnr_image_large', 'تصویر بزرگ‌تر از ۱۵ مگابایت است و دانلود نشد.' );
 		}
 
 		$mime = wp_get_image_mime( $tmp );
@@ -226,12 +237,12 @@ class Media {
 	 *
 	 * @return int Attachment ID or 0.
 	 */
-	public static function set_featured( $url, $post_id, $mode, $title, $referer ) {
+	public static function set_featured( $url, $post_id, $mode, $title, $referer, $source_id = 0 ) {
 		$id = 0;
 		if ( 'hotlink' !== $mode ) {
 			$id = self::sideload( $url, $post_id, $title, $referer, true );
 			if ( is_wp_error( $id ) ) {
-				Log::warning( 'دانلود تصویر شاخص ناموفق بود؛ از لینک منبع استفاده شد: ' . $id->get_error_message() );
+				Log::warning( 'دانلود تصویر شاخص ناموفق بود؛ از لینک منبع استفاده شد: ' . $id->get_error_message(), $source_id );
 				$id = 0;
 			}
 		}
@@ -252,11 +263,13 @@ class Media {
 		if ( $max <= 0 || false === stripos( $html, '<img' ) ) {
 			return $html;
 		}
-		$doc   = Dom::load( $html );
-		$count = 0;
-		$done  = array();
+		$doc     = Dom::load( $html );
+		$count   = 0;
+		$done    = array();
+		$started = time();
 		foreach ( iterator_to_array( $doc->getElementsByTagName( 'img' ) ) as $img ) {
-			if ( $count >= $max ) {
+			// Stay well inside PHP's time limit; images not downloaded keep their source address.
+			if ( $count >= $max || time() - $started > 40 ) {
 				break;
 			}
 			$src = $img->getAttribute( 'src' );

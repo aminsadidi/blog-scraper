@@ -105,7 +105,7 @@ class Publisher {
 
 			$image_mode = Settings::image_mode( $cfg );
 			if ( $p['featured'] ) {
-				Media::set_featured( $p['featured'], $post_id, $image_mode, $p['title'], $p['page_url'] );
+				Media::set_featured( $p['featured'], $post_id, $image_mode, $p['title'], $p['page_url'], $source_id );
 			}
 			if ( 'local' === $image_mode && $p['images'] ) {
 				$content = Media::localize_content_images( $p['content'], $post_id, (int) Settings::get( 'max_images' ), $p['title'], $p['page_url'] );

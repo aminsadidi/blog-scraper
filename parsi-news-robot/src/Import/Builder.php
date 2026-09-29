@@ -50,6 +50,11 @@ class Builder {
 				if ( 'page' === $mode ) {
 					return new \WP_Error( 'pnr_page', 'صفحه خبر باز نشد: ' . $page_err );
 				}
+			} elseif ( self::is_challenge_page( $page['body'] ) ) {
+				$page_err = 'سایت منبع با دیوار امنیتی (مثل ابر آروان یا کلادفلر) جلوی ربات را گرفته است؛ متن کامل قابل دریافت نیست. حالت «فقط از RSS» را امتحان کنید.';
+				if ( 'page' === $mode ) {
+					return new \WP_Error( 'pnr_page', $page_err );
+				}
 			} else {
 				$page_url  = $page['url'];
 				$extracted = Extractor::extract( $page['body'], $page_url, $cfg );
@@ -59,7 +64,7 @@ class Builder {
 		$use_page = $need_page && $extracted && Util::strlen( Util::text( $extracted['content'] ) ) >= 150;
 		if ( $use_page ) {
 			$html   = $extracted['content'];
-			$base   = $page_url;
+			$base   = $extracted['base'];
 			$method = $extracted['method'];
 		} else {
 			$html   = $feed_html;
@@ -135,7 +140,7 @@ class Builder {
 			return new \WP_Error( 'pnr_skip', 'قانون حذف: ' . $rules['skip'] );
 		}
 
-		$excerpt = $lead ? $lead : wp_trim_words( $text, 40, '…' );
+		$excerpt = wp_trim_words( $lead ? $lead : $text, $lead ? 60 : 40, '…' );
 
 		return array(
 			'title'        => $title,
@@ -156,6 +161,16 @@ class Builder {
 			'content_hash' => md5( $title . '|' . $text ),
 			'feed_sig'     => Fetcher::signature( $item ),
 		);
+	}
+
+	/**
+	 * A bot-check / DDoS-protection page instead of the article (ArvanCloud, Cloudflare, DDoS-Guard…).
+	 */
+	public static function is_challenge_page( $html ) {
+		if ( strlen( (string) $html ) > 60000 ) {
+			return false; // Real article pages are larger than challenge pages.
+		}
+		return (bool) preg_match( '~challenge-platform|cf-browser-verification|cf_chl_|Just a moment\.\.\.|Checking your browser|ddos-guard|__arvan|arvancloud.*challenge|captcha-delivery|<title>\s*(Attention Required|DDoS)~i', (string) $html );
 	}
 
 	/**

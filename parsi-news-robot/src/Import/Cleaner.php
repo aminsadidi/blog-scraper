@@ -119,7 +119,8 @@ class Cleaner {
 			$src     = $iframe->getAttribute( 'src' ) ? $iframe->getAttribute( 'src' ) : $iframe->getAttribute( 'data-src' );
 			$src     = Util::absolute_url( $src, $base );
 			$host    = Util::host( $src );
-			$allowed = $src && Util::host_matches( $host, $source_host );
+			// The source's own domain is trusted only for player pages (/embed/, /video/…), not arbitrary pages.
+			$allowed = $src && Util::host_matches( $host, $source_host ) && self::is_video_url( $src, $source_host );
 			foreach ( $opts['iframe_hosts'] as $allowed_host ) {
 				$allowed = $allowed || Util::host_matches( $host, $allowed_host );
 			}

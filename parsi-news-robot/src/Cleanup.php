@@ -153,12 +153,19 @@ class Cleanup {
 	 */
 	private static function requeue_stuck() {
 		global $wpdb;
-		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id FROM ' . Seen::table() . " WHERE status = 'queued' AND scheduled_at < %d LIMIT 20", time() - 6 * HOUR_IN_SECONDS ) ); // phpcs:ignore WordPress.DB
+		// "processing" for over an hour means the runner died (e.g. PHP time limit): try again.
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id, status FROM ' . Seen::table() . " WHERE ( status = 'queued' AND scheduled_at < %d ) OR ( status = 'processing' AND scheduled_at < %d ) LIMIT 20", time() - 6 * HOUR_IN_SECONDS, time() - HOUR_IN_SECONDS ) ); // phpcs:ignore WordPress.DB
 		foreach ( $rows as $row ) {
-			if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( Queue::IMPORT, array( (int) $row->id ), Queue::GROUP ) ) {
+			if ( 'queued' === $row->status && function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( Queue::IMPORT, array( (int) $row->id ), Queue::GROUP ) ) {
 				continue;
 			}
-			Seen::update( $row->id, array( 'scheduled_at' => time() ) );
+			Seen::update(
+				$row->id,
+				array(
+					'status'       => 'queued',
+					'scheduled_at' => time(),
+				)
+			);
 			Queue::schedule_import( (int) $row->id, time() );
 		}
 	}

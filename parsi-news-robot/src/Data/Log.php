@@ -27,7 +27,7 @@ class Log {
 				'created_at' => time(),
 				'level'      => substr( sanitize_key( $level ), 0, 10 ),
 				'source_id'  => (int) $source_id,
-				'message'    => wp_strip_all_tags( (string) $message ),
+				'message'    => \ParsiNewsRobot\Support\Util::db_safe( wp_strip_all_tags( (string) $message ), self::table(), 'message' ),
 			),
 			array( '%d', '%s', '%d', '%s' )
 		);
