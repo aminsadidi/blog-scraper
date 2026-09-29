@@ -323,6 +323,9 @@ class SourceEditor {
 			} elseif ( $row['already'] ) {
 				echo '<li class="pnr-warn">این خبر قبلاً بررسی شده و دوباره وارد نمی‌شود.</li>';
 			}
+			if ( ! empty( $row['copy'] ) ) {
+				echo '<li class="pnr-warn">' . esc_html( $row['copy'] ) . '</li>';
+			}
 			if ( $row['duplicate'] ) {
 				echo '<li class="pnr-warn">این خبر مشابه خبری است که قبلاً وارد شده و منتشر نمی‌شود.</li>';
 			}

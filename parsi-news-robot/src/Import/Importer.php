@@ -94,6 +94,27 @@ class Importer {
 		$prepared = Builder::build( $item, $cfg );
 
 		if ( ! is_wp_error( $prepared ) ) {
+			// Same story republished by another outlet ("به نقل از …"): the text is what gives it away.
+			$copy = Similarity::find( $prepared['title'] . ' ' . $prepared['text'] );
+			if ( $copy ) {
+				$note = sprintf(
+					'%1$d٪ شبیه %2$s «%3$s»',
+					round( $copy['score'] * 100 ),
+					$copy['own'] ? 'نوشته خود سایت' : 'خبر منتشرشده',
+					get_post_field( 'post_title', $copy['post_id'] )
+				);
+				Seen::update(
+					$row->id,
+					array(
+						'status'  => 'duplicate',
+						'post_id' => $copy['post_id'],
+						'note'    => $note,
+						'payload' => null,
+					)
+				);
+				Log::info( sprintf( 'منتشر نشد (متن تکراری): «%1$s» — %2$s', $item['title'], $note ), $source_id );
+				return null;
+			}
 			$post_id = Publisher::publish( $prepared, $source_id, $cfg, $row );
 			if ( ! is_wp_error( $post_id ) ) {
 				Seen::update(

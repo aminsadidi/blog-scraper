@@ -54,6 +54,9 @@ class Settings {
 			'dup_titles'         => 1,
 			'dup_threshold'      => 75,
 			'dup_hours'          => 48,
+			'content_dup'           => 1,  // Skip stories whose text is mostly the same as a recent one.
+			'content_dup_threshold' => 80,
+			'content_dup_own'       => 1,  // Also compare with the site's own posts.
 			'signatures'         => "انتهای پیام\nکد خبر\nلینک کوتاه\nبیشتر بخوانید\nمطالب مرتبط\nکانال ما\nعضو کانال\nبه کانال تلگرام\nما را در\nکپی برداری\nکپی‌برداری\nبازنشر این مطلب\nمنبع تصویر\nزمان مطالعه\nبه روز شده در\nمنتشر شده در\nاشتراک گذاری\nاشتراک‌گذاری",
 
 			// Auto delete.

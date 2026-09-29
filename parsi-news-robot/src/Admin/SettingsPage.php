@@ -166,6 +166,12 @@ class SettingsPage {
 						<?php Form::checkbox( 's[dup_titles]', $s['dup_titles'], 'اگر خبری با عنوان مشابه در این بازه منتشر شده، دوباره منتشر نشود' ); ?>
 						<p>شباهت عنوان حداقل <?php Form::number( 's[dup_threshold]', $s['dup_threshold'], 50, 100 ); ?>٪ در <?php Form::number( 's[dup_hours]', $s['dup_hours'], 1, 720 ); ?> ساعت اخیر</p>
 					</td></tr>
+					<tr><th>خبر بازنشرشده (متن مشابه)</th><td>
+						<?php Form::checkbox( 's[content_dup]', $s['content_dup'], 'اگر متن خبر با خبری که در همین بازه منتشر شده مشابه بود، منتشر نشود' ); ?>
+						<p>حداقل شباهت متن: <?php Form::number( 's[content_dup_threshold]', $s['content_dup_threshold'], 50, 100 ); ?>٪</p>
+						<?php Form::checkbox( 's[content_dup_own]', $s['content_dup_own'], 'با خبرهایی که خودم در سایت می‌نویسم هم مقایسه شود' ); ?>
+						<p class="description">وقتی یک خبرگزاری خبر خبرگزاری دیگری را «به نقل از» بازنشر می‌کند، معمولاً عنوان عوض می‌شود ولی متن تقریباً همان است. متن هر خبر با خبرهای منتشرشده مقایسه می‌شود؛ اگر بخش بزرگی از متن کوتاه‌تر در دیگری آمده باشد (مثلاً ۸۰٪)، خبر دوم منتشر نمی‌شود. یک جمله اضافه مثل «به گزارش … به نقل از …» مانع تشخیص نیست. خبرهای کوتاه‌تر از ۴۰ کلمه فقط با عنوان مقایسه می‌شوند.</p>
+					</td></tr>
 				</table>
 			</div>
 
@@ -284,6 +290,9 @@ class SettingsPage {
 			'dup_titles'            => Form::bool( $in, 'dup_titles' ),
 			'dup_threshold'         => Form::int( $in, 'dup_threshold', 50, 100, $d['dup_threshold'] ),
 			'dup_hours'             => Form::int( $in, 'dup_hours', 1, 720, $d['dup_hours'] ),
+			'content_dup'           => Form::bool( $in, 'content_dup' ),
+			'content_dup_threshold' => Form::int( $in, 'content_dup_threshold', 50, 100, $d['content_dup_threshold'] ),
+			'content_dup_own'       => Form::bool( $in, 'content_dup_own' ),
 			'signatures'            => Form::textarea_value( $in, 'signatures' ),
 			'iframe_hosts'          => Form::textarea_value( $in, 'iframe_hosts' ),
 			'delete_after_days'     => Form::int( $in, 'delete_after_days', 0, 3650, 0 ),

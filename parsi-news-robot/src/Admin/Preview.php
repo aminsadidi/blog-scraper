@@ -68,6 +68,8 @@ class Preview {
 			$seen               = \ParsiNewsRobot\Data\Seen::by_hash( Dedupe::item_hash( $item['link'], $item['guid'], $item['title'], count( wp_list_pluck( $feed['items'], 'link' ) ) !== count( array_unique( wp_list_pluck( $feed['items'], 'link' ) ) ) ) );
 			$row['already']     = $seen ? $seen->status : '';
 			$row['duplicate']   = ! $seen && Dedupe::find_similar( $item['title'] );
+			$copy               = $seen ? null : \ParsiNewsRobot\Import\Similarity::find( $built['title'] . ' ' . $built['text'] );
+			$row['copy']        = $copy ? sprintf( 'متن این خبر %1$d٪ شبیه %2$s «%3$s» است و منتشر نمی‌شود.', round( $copy['score'] * 100 ), $copy['own'] ? 'نوشته خود سایت' : 'خبر منتشرشده', get_post_field( 'post_title', $copy['post_id'] ) ) : '';
 			$report['items'][]  = $row;
 		}
 		return $report;

@@ -32,6 +32,8 @@ class Dashboard {
 			self::card( 'خبرهای امروز', number_format_i18n( Items::count( 0, $today ) ) );
 			self::card( '۲۴ ساعت اخیر', number_format_i18n( Items::count( 0, time() - DAY_IN_SECONDS ) ) );
 			self::card( 'در صف انتشار', number_format_i18n( Seen::queued_count() ) );
+			$recent = Seen::counts_by_status( time() - DAY_IN_SECONDS );
+			self::card( 'تکراری رد شده (۲۴ ساعت)', number_format_i18n( isset( $recent['duplicate'] ) ? $recent['duplicate'] : 0 ) );
 			self::card( 'ریدایرکت‌ها', number_format_i18n( Redirects::count() ) );
 			self::card( 'آخرین اجرای زمان‌بند', Admin::when( (int) get_option( 'pnr_last_tick', 0 ) ) );
 			?>

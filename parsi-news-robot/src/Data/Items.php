@@ -31,6 +31,7 @@ class Items {
 				'source_name'    => '',
 				'feed_sig'       => '',
 				'content_hash'   => '',
+				'sketch'         => '',
 				'main_term'      => 0,
 				'has_video'      => 0,
 				'image_count'    => 0,

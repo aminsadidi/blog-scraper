@@ -17,7 +17,7 @@
 defined( 'ABSPATH' ) || exit;
 
 define( 'PNR_VERSION', '1.0.0' );
-define( 'PNR_DB_VERSION', 2 );
+define( 'PNR_DB_VERSION', 3 );
 define( 'PNR_FILE', __FILE__ );
 define( 'PNR_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PNR_URL', plugin_dir_url( __FILE__ ) );

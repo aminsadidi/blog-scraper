@@ -83,4 +83,15 @@ check('shared links hash per item', $a !== $b);
 // 3. firewall / challenge page detected with a clear message
 $ch = '<html><head><title>Just a moment...</title></head><body><script src="/cdn-cgi/challenge-platform/x.js"></script>Checking your browser</body></html>';
 check('challenge page detected', Builder::is_challenge_page($ch));
+
+// Body-text similarity (republished stories).
+$pnr_base = str_repeat( 'دولت امروز اعلام کرد که بودجه سال آینده با تمرکز بر کاهش تورم و حمایت از تولید داخلی تنظیم شده است. ', 1 ) . 'وزیر اقتصاد گفت درآمدهای نفتی کمتر از پیش‌بینی بوده و دولت ناچار است هزینه‌های جاری را کاهش دهد. نمایندگان مجلس از برخی بندهای لایحه انتقاد کردند و خواستار افزایش بودجه بخش سلامت و آموزش شدند. کارشناسان می‌گویند اجرای این بودجه به همکاری دولت و مجلس و ثبات بازار ارز بستگی دارد و بدون اصلاحات ساختاری تورم مهار نمی‌شود.';
+$pnr_a = ParsiNewsRobot\Import\Similarity::sketch( $pnr_base );
+$pnr_b = ParsiNewsRobot\Import\Similarity::sketch( 'به گزارش خبرگزاری نمونه به نقل از یک رسانه دیگر، ' . $pnr_base . ' انتهای پیام' );
+$pnr_c = ParsiNewsRobot\Import\Similarity::sketch( 'تیم ملی فوتبال ایران در دیدار دوستانه برابر حریف آسیایی خود با دو گل به پیروزی رسید. سرمربی تیم ملی پس از بازی گفت بازیکنان جوان عملکرد خوبی داشتند و تیم برای مسابقات انتخابی آماده می‌شود. هواداران در ورزشگاه آزادی حضور پرشوری داشتند و بازی با تشویق آنها به پایان رسید. دو گل ایران را مهاجمان جوان تیم در نیمه دوم به ثمر رساندند.' );
+check( 'republished copy with attribution scores >= 80%', ParsiNewsRobot\Import\Similarity::score( $pnr_a, $pnr_b ) >= 0.8 );
+check( 'different story scores < 30%', ParsiNewsRobot\Import\Similarity::score( $pnr_a, $pnr_c ) < 0.3 );
+check( 'sketch survives encode/decode', ParsiNewsRobot\Import\Similarity::decode( ParsiNewsRobot\Import\Similarity::encode( $pnr_a ) ) == $pnr_a );
+check( 'sketch of another format version is ignored', null === ParsiNewsRobot\Import\Similarity::decode( '12:AAAA' ) );
+check( 'short texts are not fingerprinted', null === ParsiNewsRobot\Import\Similarity::sketch( 'خبر کوتاه دو خطی' ) );
 if ( $pnr_failed ) { WP_CLI::error( $pnr_failed . " test(s) failed." ); } WP_CLI::success( "All tests passed." );

@@ -95,6 +95,7 @@ class Publisher {
 					'source_name'  => Sources::name( $source_id, $cfg ),
 					'feed_sig'     => $p['feed_sig'],
 					'content_hash' => $p['content_hash'],
+					'sketch'       => Similarity::encode( Similarity::sketch( $p['title'] . ' ' . $p['text'] ) ),
 					'main_term'    => (int) $categories['primary'],
 					'has_video'    => $p['has_video'] ? 1 : 0,
 					'image_count'  => (int) $p['image_count'],
@@ -187,6 +188,7 @@ class Publisher {
 			$post_id,
 			array(
 				'content_hash' => $p['content_hash'],
+				'sketch'       => Similarity::encode( Similarity::sketch( $p['title'] . ' ' . $p['text'] ) ),
 				'feed_sig'     => $p['feed_sig'],
 				'has_video'    => $p['has_video'] ? 1 : 0,
 				'image_count'  => (int) $p['image_count'],

@@ -27,6 +27,7 @@ class Plugin {
 		Seo::init();
 		Links::init();
 		Cleanup::init();
+		add_action( 'save_post', array( Import\Similarity::class, 'on_save_post' ), 20, 2 );
 
 		if ( is_admin() ) {
 			Admin\Admin::init();

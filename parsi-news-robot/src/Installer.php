@@ -36,9 +36,13 @@ class Installer {
 	 * Runs on every load: upgrades the schema when the plugin was updated in place.
 	 */
 	public static function maybe_upgrade() {
-		if ( (int) get_option( 'pnr_db_version', 0 ) < PNR_DB_VERSION ) {
+		$installed = (int) get_option( 'pnr_db_version', 0 );
+		if ( $installed < PNR_DB_VERSION ) {
 			self::install_schema();
 			self::grant_capability();
+			if ( $installed > 0 && $installed < 3 ) {
+				Import\Similarity::backfill(); // v3 added body-text duplicate detection.
+			}
 		}
 	}
 
@@ -56,6 +60,7 @@ class Installer {
 				source_name varchar(191) NOT NULL DEFAULT '',
 				feed_sig char(32) NOT NULL DEFAULT '',
 				content_hash char(32) NOT NULL DEFAULT '',
+				sketch varchar(1024) NOT NULL DEFAULT '',
 				main_term bigint(20) unsigned NOT NULL DEFAULT 0,
 				has_video tinyint(1) NOT NULL DEFAULT 0,
 				image_count smallint(5) unsigned NOT NULL DEFAULT 0,
