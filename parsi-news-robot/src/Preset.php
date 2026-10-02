@@ -43,7 +43,8 @@ class Preset {
 			return;
 		}
 		set_transient( 'pnr_preset_lock', 1, 5 * MINUTE_IN_SECONDS );
-		$report = self::apply( $preset );
+		// Roles and settings only the first time: later preset versions must not undo the owner's changes.
+		$report = self::apply( $preset, false === get_option( self::OPTION, false ) );
 		update_option( self::OPTION, $key, true );
 		update_option( 'pnr_preset_report', $report, false );
 		delete_transient( 'pnr_preset_lock' );
@@ -53,7 +54,20 @@ class Preset {
 	/**
 	 * @return string[] Human-readable report lines.
 	 */
-	public static function apply( array $preset ) {
+	public static function apply( array $preset, $full = true ) {
+		$report = array();
+		if ( $full ) {
+			$report = self::apply_settings( $preset );
+		}
+		return array_merge( $report, self::apply_sources( $preset ) );
+	}
+
+	/**
+	 * Category roles (matched by category name) and global settings.
+	 *
+	 * @return string[]
+	 */
+	private static function apply_settings( array $preset ) {
 		$report = array();
 
 		// Category roles.
@@ -82,7 +96,17 @@ class Preset {
 			$report[] = 'این دسته‌ها در سایت پیدا نشدند: ' . implode( '، ', $missing );
 		}
 
-		// Sources (an address that already exists is left as it is).
+		return $report;
+	}
+
+	/**
+	 * Adds the preset's sources (an address that already exists is left as it is) and moves the ones an
+	 * earlier preset version added but this one drops to the trash (their published posts stay).
+	 *
+	 * @return string[]
+	 */
+	private static function apply_sources( array $preset ) {
+		$report   = array();
 		$existing = array();
 		foreach ( Sources::all_ids() as $id ) {
 			$existing[ Sources::config( $id )['url'] ] = $id;
@@ -121,6 +145,16 @@ class Preset {
 			$added++;
 		}
 		$report[] = sprintf( '%d منبع اضافه شد', $added );
+
+		$removed = 0;
+		foreach ( isset( $preset['remove_sources'] ) ? (array) $preset['remove_sources'] : array() as $url ) {
+			if ( isset( $existing[ $url ] ) && wp_trash_post( $existing[ $url ] ) ) {
+				$removed++;
+			}
+		}
+		if ( $removed ) {
+			$report[] = sprintf( '%d منبع بی‌نتیجه حذف شد', $removed );
+		}
 		return $report;
 	}
 
