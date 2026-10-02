@@ -1,0 +1,13 @@
+{
+  "name": "source-scout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Checks news sources from your own computer with a real browser and writes a report for configuring Parsi News Robot.",
+  "type": "module",
+  "scripts": {
+    "start": "node scout.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.56.1"
+  }
+}

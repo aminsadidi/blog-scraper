@@ -1,0 +1,5 @@
+tools/source-scout/node_modules/
+tools/source-scout/report.json
+tools/source-scout/report.txt
+tools/source-scout/run.log
+tools/source-scout/test-urls.txt

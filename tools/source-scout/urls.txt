@@ -1,0 +1,38 @@
+# هر خط یک آدرس. خط‌هایی که با # شروع می‌شوند نادیده گرفته می‌شوند.
+# آدرس RSS، صفحه فهرست خبرها، صفحه آرشیو یا صفحه «RSS» سایت؛ اسکریپت خودش تشخیص می‌دهد.
+
+# --- مهر ---
+https://www.mehrnews.com/rss?kw=مشهد
+https://www.mehrnews.com/rss?tp=9&kw=مشهد
+https://www.mehrnews.com/rss?tp=25&kw=مشهد
+https://www.mehrnews.com/archive
+https://www.mehrnews.com/rss-help
+
+# --- ایسنا ---
+https://www.isna.ir/rss?kw=مشهد
+https://www.isna.ir/archive
+https://www.isna.ir/rss-help
+
+# --- ایرنا ---
+https://www.irna.ir/rss?kw=مشهد
+https://www.irna.ir/archive
+https://www.irna.ir/rss-help
+
+# --- خبرآنلاین و همشهری ---
+https://www.khabaronline.ir/rss?kw=مشهد
+https://www.hamshahrionline.ir/rss?kw=مشهد
+
+# --- تسنیم، فارس، باشگاه خبرنگاران ---
+https://www.tasnimnews.com/fa/rss
+https://www.farsnews.ir/rss
+https://www.yjc.ir/fa/rss
+
+# --- رسانه‌های مشهد ---
+https://www.shahraranews.ir/
+https://www.shahraranews.ir/fa/rss
+https://qudsonline.ir/
+https://qudsonline.ir/rss
+https://www.khorasannews.com/
+
+# --- ورزشی ---
+https://www.varzesh3.com/rss/all
