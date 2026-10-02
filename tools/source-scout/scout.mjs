@@ -3,6 +3,7 @@
 //
 //   npm install
 //   node scout.mjs                       (addresses from urls.txt, keyword "مشهد")
+//   WORKERS=6 node scout.mjs            (number of parallel browsers, default 4; PowerShell: $env:WORKERS="6"; node scout.mjs)
 //   KEYWORD=تهران node scout.mjs          (another keyword; on Windows PowerShell: $env:KEYWORD="تهران"; node scout.mjs)
 //
 // It only reads public pages, one at a time with a pause in between.
@@ -17,6 +18,8 @@ const KEYWORD = process.env.KEYWORD || 'مشهد';
 const ARTICLES_PER_SOURCE = Number(process.env.ARTICLES || 2);
 const PAUSE_MS = 1500;
 const HEADLESS = process.env.HEADLESS === '1';
+// Number of browser windows working at the same time. Two addresses of the same site never run together.
+const WORKERS = Math.max(1, Number(process.env.WORKERS || 4));
 
 const BODY_SELECTORS = ['[itemprop="articleBody"]', '.item-text', '#echo_detail', '.news-text', '.newsText', '.news_body', '.news-body', '#newsMainBody', '.content-news', '.body', '.story', '.entry-content', '.post-content', '.article-body', 'article'];
 const LEAD_SELECTORS = ['.summary', '.introtext', '.lead', '.news-lead', '.subtitle', '.sub-title', '.rutitr', '[itemprop="description"]'];
@@ -37,12 +40,12 @@ function encodeUrl(url) {
 	}
 }
 
-async function launch() {
+async function launch(announce = true) {
 	const options = { headless: HEADLESS };
 	for (const channel of ['msedge', 'chrome', undefined]) {
 		try {
 			const browser = await chromium.launch(channel ? { ...options, channel } : options);
-			log(`مرورگر: ${channel || 'chromium'}`);
+			if (announce) log(`مرورگر: ${channel || 'chromium'}`);
 			return browser;
 		} catch {
 			// Try the next one.
@@ -57,14 +60,13 @@ const isFeed = (body) => /<(rss|feed|rdf:RDF)[\s>]/i.test(body.replace(/^﻿/, '
 // Downloads an address inside the real browser: the site is opened first (passing any firewall check and
 // collecting its cookies), then the address is fetched from within the page. This also works for feeds a
 // browser would otherwise save as a file instead of showing.
-const opened = new Set();
-async function fetchRaw(context, page, url) {
+async function fetchRaw({ context, page, opened, say }, url) {
 	const origin = new URL(url).origin;
 	const openSite = async () => {
 		await page.goto(origin + '/', { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
 		await sleep(2000);
 		if (isChallenge(await page.content().catch(() => ''))) {
-			log('   دیوار امنیتی دیده شد؛ صبر برای عبور مرورگر…');
+			say('دیوار امنیتی دیده شد؛ صبر برای عبور مرورگر…');
 			await sleep(10000);
 		}
 	};
@@ -219,90 +221,132 @@ function summarize(src) {
 	return lines.join('\n');
 }
 
+// Checks one address with a worker's browser and returns its report entry.
+async function inspectSource(w, raw) {
+	const url = encodeUrl(raw);
+	const src = { url: raw };
+	let r = await fetchRaw(w, url);
+	if (r.status >= 400 && !isFeed(r.body)) {
+		// Some sites refuse the in-page download but answer the browser's own request client.
+		const res = await w.context.request.get(url, { timeout: 40000, failOnStatusCode: false, maxRedirects: 5 }).catch(() => null);
+		if (res && res.status() < 400) r = { status: res.status(), type: res.headers()['content-type'] || '', url: res.url(), body: await res.text() };
+		else throw new Error(`سایت خطای HTTP ${r.status} داد`);
+	}
+	Object.assign(src, { status: r.status, final_url: r.url, content_type: r.type, challenge: !!r.challenge });
+	let articleLinks = [];
+	if (isFeed(r.body)) {
+		const feed = await parseFeed(w.parser, r.body);
+		if (feed.error) throw new Error(feed.error);
+		src.kind = 'rss';
+		src.title = feed.title;
+		src.items = feed.items;
+		src.keyword_share = feed.items.length ? Math.round(100 * feed.items.filter((i) => (i.title + i.description).includes(KEYWORD)).length / feed.items.length) : 0;
+		src.categories = {};
+		feed.items.flatMap((i) => i.categories).forEach((c) => (src.categories[c] = (src.categories[c] || 0) + 1));
+		articleLinks = feed.items.map((i) => i.link).filter(Boolean);
+		w.say(`RSS: ${feed.items.length} خبر، ${src.keyword_share}٪ شامل «${KEYWORD}»`);
+	} else {
+		src.kind = 'html';
+		await w.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+		await sleep(2500);
+		src.page = await inspectPage(w.page);
+		articleLinks = src.page.link_groups[0]?.samples.map((s) => s.href) || [];
+		w.say(`صفحه: ${src.page.link_groups[0]?.count || 0} لینک خبر، ${src.page.rss_links.length} لینک RSS، ${src.page.filters.length} فیلتر`);
+	}
+	src.articles = [];
+	for (const link of articleLinks.slice(0, ARTICLES_PER_SOURCE)) {
+		await sleep(PAUSE_MS);
+		try {
+			src.articles.push(await inspectArticle(w.page, link, BODY_SELECTORS, LEAD_SELECTORS));
+		} catch (e) {
+			src.articles.push({ url: link, error: String(e.message || e).split('\n')[0] });
+		}
+	}
+	return src;
+}
+
+// One browser window with its own pages; reopened when it was closed or crashed.
+function makeWorker(id) {
+	const w = { id, browser: null, context: null, page: null, parser: null, opened: new Set(), say: log };
+	w.open = async () => {
+		await w.browser?.close().catch(() => {});
+		w.browser = await launch(id === 1);
+		// SCOUT_IGNORE_CERT=1 is only for networks behind an inspecting proxy (corporate / test servers).
+		w.context = await w.browser.newContext({ locale: 'fa-IR', viewport: { width: 1100, height: 800 }, ignoreHTTPSErrors: process.env.SCOUT_IGNORE_CERT === '1' });
+		// Pictures, videos and fonts are not needed for the report; skipping them saves a lot of bandwidth.
+		await w.context.route('**/*', (route) => (['image', 'media', 'font'].includes(route.request().resourceType()) ? route.abort() : route.continue()));
+		w.page = await w.context.newPage();
+		w.parser = await w.context.newPage();
+		await w.parser.goto('about:blank');
+		w.opened.clear();
+	};
+	w.alive = () => !!w.browser && w.browser.isConnected() && !w.page.isClosed() && !w.parser.isClosed();
+	return w;
+}
+
 async function main() {
 	const urls = readUrls();
-	log(`${urls.length} آدرس، کلمه کلیدی: «${KEYWORD}»`);
-	let browser, context, page, parser;
-	// (Re)opens the browser, e.g. after the window was closed by accident or the browser crashed.
-	const open = async () => {
-		await browser?.close().catch(() => {});
-		browser = await launch();
-		// SCOUT_IGNORE_CERT=1 is only for networks behind an inspecting proxy (corporate / test servers).
-		context = await browser.newContext({ locale: 'fa-IR', viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: process.env.SCOUT_IGNORE_CERT === '1' });
-		page = await context.newPage();
-		parser = await context.newPage();
-		await parser.goto('about:blank');
-		opened.clear();
-	};
-	const alive = () => browser.isConnected() && !page.isClosed() && !parser.isClosed();
-	await open();
+	const count = Math.min(WORKERS, urls.length);
+	log(`${urls.length} آدرس، کلمه کلیدی: «${KEYWORD}»، ${count} مرورگر همزمان`);
 
+	const results = new Array(urls.length);
 	const report = { generated: new Date().toISOString(), keyword: KEYWORD, sources: [] };
 	const save = () => {
+		report.sources = results.filter(Boolean);
 		fs.writeFileSync(path.join(DIR, 'report.json'), JSON.stringify(report, null, 1));
 		fs.writeFileSync(path.join(DIR, 'report.txt'), report.sources.map(summarize).join('\n\n') + '\n');
 	};
 
-	const retried = new Set();
-	for (const [n, raw] of urls.entries()) {
-		const url = encodeUrl(raw);
-		log(`\n[${n + 1}/${urls.length}] ${raw}`);
-		const src = { url: raw };
-		if (!alive()) {
-			log('   مرورگر بسته شده بود؛ دوباره باز می‌شود…');
-			await open();
-		}
-		try {
-			const r = await fetchRaw(context, page, url);
-			Object.assign(src, { status: r.status, final_url: r.url, content_type: r.type, challenge: !!r.challenge });
-			let articleLinks = [];
-			if (isFeed(r.body)) {
-				const feed = await parseFeed(parser, r.body);
-				if (feed.error) throw new Error(feed.error);
-				src.kind = 'rss';
-				src.title = feed.title;
-				src.items = feed.items;
-				src.keyword_share = feed.items.length ? Math.round(100 * feed.items.filter((i) => (i.title + i.description).includes(KEYWORD)).length / feed.items.length) : 0;
-				src.categories = {};
-				feed.items.flatMap((i) => i.categories).forEach((c) => (src.categories[c] = (src.categories[c] || 0) + 1));
-				articleLinks = feed.items.map((i) => i.link).filter(Boolean);
-				log(`   RSS: ${feed.items.length} خبر، ${src.keyword_share}٪ شامل «${KEYWORD}»`);
-			} else {
-				src.kind = 'html';
-				await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-				await sleep(2500);
-				src.page = await inspectPage(page);
-				articleLinks = src.page.link_groups[0]?.samples.map((s) => s.href) || [];
-				log(`   صفحه: ${src.page.link_groups[0]?.count || 0} لینک خبر، ${src.page.rss_links.length} لینک RSS، ${src.page.filters.length} فیلتر`);
-			}
-			src.articles = [];
-			for (const link of articleLinks.slice(0, ARTICLES_PER_SOURCE)) {
-				await sleep(PAUSE_MS);
-				try {
-					src.articles.push(await inspectArticle(page, link, BODY_SELECTORS, LEAD_SELECTORS));
-				} catch (e) {
-					src.articles.push({ url: link, error: String(e.message || e).split('\n')[0] });
-				}
-			}
-		} catch (e) {
-			src.error = String(e.message || e).split('\n')[0];
-			log('   خطا: ' + src.error);
-			if (!alive()) {
-				// The browser went away mid-source: reopen and give this address one more try.
-				log('   مرورگر بسته شد؛ دوباره باز می‌شود و همین آدرس تکرار می‌شود…');
-				await open();
-				if (!retried.has(raw)) {
-					retried.add(raw);
-					urls.splice(n + 1, 0, raw);
-				}
-			}
-		}
-		report.sources.push(src);
-		save(); // After every source, so a crash never loses earlier results.
-		await sleep(PAUSE_MS);
-	}
+	// Shared queue: a worker takes the next address whose site no other worker is visiting right now.
+	const pending = urls.map((raw, index) => ({ raw, index, host: (() => { try { return new URL(encodeUrl(raw)).hostname.replace(/^www\./, ''); } catch { return raw; } })() }));
+	const busy = new Set();
+	let done = 0;
+	const take = () => {
+		const i = pending.findIndex((t) => !busy.has(t.host));
+		return i < 0 ? null : pending.splice(i, 1)[0];
+	};
 
-	await browser.close();
+	const run = async (w) => {
+		await w.open();
+		while (pending.length) {
+			const task = take();
+			if (!task) {
+				await sleep(500); // Remaining addresses belong to sites other windows are visiting.
+				continue;
+			}
+			busy.add(task.host);
+			const tag = `[${task.index + 1}/${urls.length}]`;
+			w.say = (msg) => log(`${tag} ${msg}`);
+			w.say(`شروع ${task.raw}  (مرورگر ${w.id})`);
+			let src;
+			for (let attempt = 1; ; attempt++) {
+				try {
+					if (!w.alive()) {
+						w.say('مرورگر بسته شده بود؛ دوباره باز می‌شود…');
+						await w.open();
+					}
+					src = await inspectSource(w, task.raw);
+					break;
+				} catch (e) {
+					const error = String(e.message || e).split('\n')[0];
+					if (attempt < 2 && !w.alive()) continue; // The browser went away mid-source: one more try.
+					src = { url: task.raw, error };
+					w.say('خطا: ' + error);
+					break;
+				}
+			}
+			results[task.index] = src;
+			done++;
+			save(); // After every source, so a crash never loses earlier results.
+			log(`   ── ${done} از ${urls.length} انجام شد`);
+			busy.delete(task.host);
+			await sleep(PAUSE_MS);
+		}
+		await w.browser?.close().catch(() => {});
+	};
+
+	await Promise.all(Array.from({ length: count }, (_, i) => run(makeWorker(i + 1)).catch((e) => log(`مرورگر ${i + 1} از کار افتاد: ${e.message || e}`))));
+	save();
 	log(`\nتمام شد. فایل report.json را برای پیکربندی بفرستید (خلاصه در report.txt).`);
 }
 
