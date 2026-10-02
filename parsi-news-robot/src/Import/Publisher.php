@@ -48,7 +48,7 @@ class Publisher {
 	 * @return int|\WP_Error Post id.
 	 */
 	public static function publish( array $p, $source_id, array $cfg, $seen ) {
-		$categories = Categorizer::assign( $cfg, $p['has_video'], $p['image_count'], $p['rules'] );
+		$categories = Categorizer::assign( $cfg, $p['has_video'], $p['image_count'], $p['rules'], isset( $p['topic'] ) ? $p['topic'] : null );
 		$final      = Settings::post_status( $cfg );
 		$noindex    = Settings::noindex( $cfg );
 		$now        = time();

@@ -122,4 +122,32 @@ $pnr_li = function ( $id, $t ) {
 $pnr_page = '<html><body><header><nav><a href="/service/politics">سیاسی</a></nav></header><main><ul>' . $pnr_li( 1001, 'عنوان خبر اول درباره شهر مشهد و قطار شهری' ) . $pnr_li( 1002, 'عنوان خبر دوم درباره بارش باران در خراسان' ) . $pnr_li( 1003, 'عنوان خبر سوم درباره ثبت‌نام زائران در مشهد' ) . $pnr_li( 1004, 'عنوان خبر چهارم درباره نشست شورای شهر مشهد' ) . '</ul></main><footer><a href="/news/900/x">لینک فوتر با متن طولانی کافی برای عنوان</a></footer></body></html>';
 $pnr_r = ParsiNewsRobot\Import\ListingReader::parse( $pnr_page, 'https://news.example.ir/tag/x' );
 check( 'listing: 4 articles, headline titles, lazy images, summaries', 4 === count( $pnr_r['items'] ) && 'عنوان خبر اول درباره شهر مشهد و قطار شهری' === $pnr_r['items'][0]['title'] && 'https://media.example.ir/1001.jpg' === $pnr_r['items'][0]['enclosures'][0]['url'] && '' !== $pnr_r['items'][0]['description'] );
+// Topic detection for mixed sources.
+$pnr_lex = array(
+	1 => array( 'ورزشی', 'فوتبال', 'لیگ', 'کشتی' ),
+	2 => array( 'حوادث', 'حریق', 'آتش نشانی', 'تصادف' ),
+	3 => array( 'اقتصادی', 'قیمت', 'بازار' ),
+);
+check( 'topic: title words win', 2 === ParsiNewsRobot\Taxonomy\Topics::detect( 'حریق مسافرخانه در مشهد مهار شد', 'ماموران آتش‌نشانی در محل حاضر شدند.', array(), $pnr_lex )['term'] );
+check( 'topic: feed category counts like the title', 2 === ParsiNewsRobot\Taxonomy\Topics::detect( 'فوت یک کارگر در مشهد', '', array( 'اخبار اجتماعی > حوادث' ), $pnr_lex )['term'] );
+check( 'topic: whole words only (لیگ is not in لیگاتور)', 0 === ParsiNewsRobot\Taxonomy\Topics::detect( 'لیگاتور جدید', '', array(), $pnr_lex )['term'] );
+check( 'topic: plural suffix still matches', 3 === ParsiNewsRobot\Taxonomy\Topics::detect( 'کاهش قیمت‌ها در مشهد', '', array(), $pnr_lex )['term'] );
+check( 'topic: no confident match falls back', 0 === ParsiNewsRobot\Taxonomy\Topics::detect( 'اخبار کوتاه خراسان رضوی', 'متن بدون کلمه خاص', array(), $pnr_lex )['term'] );
+check( 'topic: built-in words come from the category name', false !== strpos( ParsiNewsRobot\Taxonomy\Topics::default_words( 'اخبار ورزشی' ), 'فوتبال' ) && '' === ParsiNewsRobot\Taxonomy\Topics::default_words( 'یادداشت' ) );
+$pnr_cfg = ParsiNewsRobot\Settings::source_defaults();
+$pnr_t1  = wp_insert_term( 'pnr-topic-test-' . wp_rand(), 'category' );
+$pnr_t2  = wp_insert_term( 'pnr-fallback-test-' . wp_rand(), 'category' );
+$pnr_cfg['main_category'] = $pnr_t2['term_id'];
+$pnr_c1  = ParsiNewsRobot\Taxonomy\Categorizer::assign( $pnr_cfg + array( 'random_scope' => 'off' ), false, 0, array(), array( 'term' => $pnr_t1['term_id'], 'score' => 6, 'words' => array( 'x' ) ) );
+$pnr_c2  = ParsiNewsRobot\Taxonomy\Categorizer::assign( $pnr_cfg, false, 0, array(), array( 'term' => 0, 'score' => 1, 'words' => array() ) );
+check( 'detected topic replaces the main category; none detected -> main category', (int) $pnr_t1['term_id'] === $pnr_c1['primary'] && ! in_array( (int) $pnr_t2['term_id'], $pnr_c1['ids'], true ) && (int) $pnr_t2['term_id'] === $pnr_c2['primary'] );
+wp_delete_term( $pnr_t1['term_id'], 'category' );
+wp_delete_term( $pnr_t2['term_id'], 'category' );
+// Required keywords: title, feed summary, meta description, lead.
+$pnr_cfg = ParsiNewsRobot\Settings::source_defaults();
+$pnr_cfg['include_keywords'] = "مشهد\nخراسان رضوی";
+check( 'keyword found in a meta description', ParsiNewsRobot\Import\Fetcher::has_keyword( $pnr_cfg, array( 'افتتاح طرح برق', '', 'در مشهدِ مقدس امروز…' ) ) );
+check( 'keyword missing everywhere', ! ParsiNewsRobot\Import\Fetcher::has_keyword( $pnr_cfg, array( 'افتتاح طرح برق در تهران', 'خلاصه بدون شهر' ) ) );
+check( 'no required keywords = everything passes', ParsiNewsRobot\Import\Fetcher::has_keyword( ParsiNewsRobot\Settings::source_defaults(), array( 'هر چیزی' ) ) );
+check( 'default keyword scope is title + summary + meta', 'summary' === ParsiNewsRobot\Import\Fetcher::keyword_scope( $pnr_cfg ) );
 if ( $GLOBALS['pnr_failed'] ) { WP_CLI::error( $GLOBALS['pnr_failed'] . " test(s) failed." ); } WP_CLI::success( "All tests passed." );

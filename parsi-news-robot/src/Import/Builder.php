@@ -11,6 +11,7 @@ use ParsiNewsRobot\Settings;
 use ParsiNewsRobot\Support\Http;
 use ParsiNewsRobot\Support\Util;
 use ParsiNewsRobot\Taxonomy\Rules;
+use ParsiNewsRobot\Taxonomy\Topics;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -156,6 +157,18 @@ class Builder {
 			return new \WP_Error( 'pnr_empty', 'متنی برای خبر پیدا نشد' . ( $page_err ? ': ' . $page_err : '.' ) );
 		}
 
+		$scope = Fetcher::keyword_scope( $cfg );
+		$texts = array( $title, $item['title'] );
+		if ( 'title' !== $scope ) {
+			array_push( $texts, $item['description'], $lead, $extracted ? $extracted['description'] : '', $extracted ? $extracted['lead'] : '' );
+		}
+		if ( 'all' === $scope ) {
+			$texts[] = $text;
+		}
+		if ( ! Fetcher::has_keyword( $cfg, $texts ) ) {
+			return new \WP_Error( 'pnr_skip', 'title' === $scope ? 'کلمه کلیدی لازم در عنوان نیست.' : ( 'all' === $scope ? 'کلمه کلیدی لازم در خبر نیست.' : 'کلمه کلیدی لازم در عنوان، توضیحات متا یا چکیده نیست.' ) );
+		}
+
 		$rules = Rules::evaluate( $title, $text );
 		if ( $rules['skip'] ) {
 			return new \WP_Error( 'pnr_skip', 'قانون حذف: ' . $rules['skip'] );
@@ -180,6 +193,7 @@ class Builder {
 			'date'         => ( $is_list && $extracted && $extracted['date'] ) ? (int) $extracted['date'] : ( (int) $item['date'] ? (int) $item['date'] : ( $extracted ? (int) $extracted['date'] : 0 ) ),
 			'tags'         => isset( $item['categories'] ) ? (array) $item['categories'] : array(),
 			'rules'        => $rules,
+			'topic'        => isset( $cfg['topic_mode'] ) && 'auto' === $cfg['topic_mode'] ? Topics::detect( $title, $text, isset( $item['categories'] ) ? (array) $item['categories'] : array() ) : null,
 			'content_hash' => md5( $title . '|' . $text ),
 			'feed_sig'     => Fetcher::signature( $item ),
 		);

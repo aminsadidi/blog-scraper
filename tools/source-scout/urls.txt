@@ -1,38 +1,66 @@
-# هر خط یک آدرس. خط‌هایی که با # شروع می‌شوند نادیده گرفته می‌شوند.
-# آدرس RSS، صفحه فهرست خبرها، صفحه آرشیو یا صفحه «RSS» سایت؛ اسکریپت خودش تشخیص می‌دهد.
+# دور دوم: بررسی همه منبع‌های پیکربندی آماده «توس پلاس». هر خط یک آدرس؛ خط‌های # نادیده گرفته می‌شوند.
 
-# --- مهر ---
+# مهر – ورزشی مشهد
+https://www.mehrnews.com/archive?tp=9&kw=مشهد
+# ایسنا – ورزشی مشهد
+https://www.isna.ir/archive?tp=24&kw=مشهد
+# ایرنا – ورزشی مشهد
+https://www.irna.ir/archive?tp=14&kw=مشهد
+# مهر – سیاسی مشهد
+https://www.mehrnews.com/archive?tp=7&kw=مشهد
+# ایسنا – سیاسی مشهد
+https://www.isna.ir/archive?tp=14&kw=مشهد
+# ایرنا – سیاسی مشهد
+https://www.irna.ir/archive?tp=5&kw=مشهد
+# مهر – اقتصادی مشهد
+https://www.mehrnews.com/archive?tp=25&kw=مشهد
+# ایسنا – اقتصادی مشهد
+https://www.isna.ir/archive?tp=34&kw=مشهد
+# ایرنا – اقتصادی مشهد
+https://www.irna.ir/archive?tp=20&kw=مشهد
+# مهر – فرهنگی مشهد
+https://www.mehrnews.com/archive?tp=2&kw=مشهد
+# ایسنا – فرهنگی مشهد
+https://www.isna.ir/archive?tp=20&kw=مشهد
+# ایرنا – فرهنگی مشهد
+https://www.irna.ir/archive?tp=41&kw=مشهد
+# مهر – حوادث مشهد
+https://www.mehrnews.com/archive?tp=770&kw=مشهد
+# ایسنا – حوادث مشهد
+https://www.isna.ir/archive?tp=65&kw=مشهد
+# ایرنا – حوادث مشهد
+https://www.irna.ir/archive?tp=817&kw=مشهد
+# مهر – بین الملل مشهد
+https://www.mehrnews.com/archive?tp=8&kw=مشهد
+# ایسنا – بین الملل مشهد
+https://www.isna.ir/archive?tp=17&kw=مشهد
+# ایرنا – بین الملل مشهد
+https://www.irna.ir/archive?tp=1&kw=مشهد
+# مهر – فضای مجازی مشهد
+https://www.mehrnews.com/archive?tp=826&kw=مشهد
+# ایسنا – فضای مجازی مشهد
+https://www.isna.ir/archive?tp=92&kw=مشهد
+# ایرنا – فضای مجازی مشهد
+https://www.irna.ir/archive?tp=181&kw=مشهد
+# مهر – همه خبرهای مشهد
 https://www.mehrnews.com/rss?kw=مشهد
-https://www.mehrnews.com/rss?tp=9&kw=مشهد
-https://www.mehrnews.com/rss?tp=25&kw=مشهد
-https://www.mehrnews.com/archive
-https://www.mehrnews.com/rss-help
-
-# --- ایسنا ---
+# ایسنا – همه خبرهای مشهد
 https://www.isna.ir/rss?kw=مشهد
-https://www.isna.ir/archive
-https://www.isna.ir/rss-help
-
-# --- ایرنا ---
+# ایرنا – همه خبرهای مشهد
 https://www.irna.ir/rss?kw=مشهد
-https://www.irna.ir/archive
-https://www.irna.ir/rss-help
-
-# --- خبرآنلاین و همشهری ---
+# خبرآنلاین – مشهد
 https://www.khabaronline.ir/rss?kw=مشهد
+# همشهری آنلاین – مشهد
 https://www.hamshahrionline.ir/rss?kw=مشهد
-
-# --- تسنیم، فارس، باشگاه خبرنگاران ---
-https://www.tasnimnews.com/fa/rss
-https://www.farsnews.ir/rss
-https://www.yjc.ir/fa/rss
-
-# --- رسانه‌های مشهد ---
-https://www.shahraranews.ir/
-https://www.shahraranews.ir/fa/rss
-https://qudsonline.ir/
+# قدس آنلاین
 https://qudsonline.ir/rss
-https://www.khorasannews.com/
+# شهرآرانیوز
+https://shahraranews.ir/fa/rss/allnews
 
-# --- ورزشی ---
-https://www.varzesh3.com/rss/all
+# --- برای پیدا کردن منبع‌های بیشتر ---
+https://www.shahraranews.ir/fa/rss
+https://www.yjc.ir/fa/rss
+https://qudsonline.ir/rss-help
+https://www.tasnimnews.com/fa/rss
+https://www.tasnimnews.ir/fa/rss
+https://www.farsnews.ir/

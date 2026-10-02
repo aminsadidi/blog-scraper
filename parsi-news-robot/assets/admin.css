@@ -156,3 +156,7 @@
 	vertical-align: middle;
 }
 @keyframes pnr-spin { to { transform: rotate(360deg); } }
+
+/* Roles table: topic detection words */
+.pnr-roles .pnr-topic-words { margin-top: 6px; min-width: 260px; }
+.pnr-roles .pnr-role-row:not([data-role="topic"]) .pnr-topic-words { display: none; }

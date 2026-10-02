@@ -85,6 +85,7 @@ class Settings {
 		return array(
 			'url'                 => '',
 			'source_type'         => 'rss', // rss | page (a listing page without RSS).
+			'skip_backlog'        => 0,     // First read: treat every story already in the feed as seen (start from now).
 			'list_selector'       => '',    // page: CSS selector of the article links (optional).
 			'list_url_filter'     => '',    // page: only links whose address contains this (optional).
 			'active'              => 1,
@@ -96,6 +97,7 @@ class Settings {
 			'drip_minutes'        => -1,
 
 			'main_category'       => 0,
+			'topic_mode'          => 'fixed', // fixed | auto (detect the topic; main_category is the fallback).
 			'extra_categories'    => array(),
 			'random_scope'        => 'inherit', // inherit | custom | off.
 			'random_sections'     => array(),
@@ -135,6 +137,7 @@ class Settings {
 			'author'              => 0,
 			'post_status'         => 'inherit',
 			'include_keywords'    => '',
+			'keyword_scope'       => 'summary', // title | summary (title, feed summary, meta description, lead) | all.
 			'exclude_keywords'    => '',
 			'min_words'           => 0,
 			'require_image'       => 0,
@@ -188,6 +191,7 @@ class Settings {
 			'quota'       => 'unlimited', // unlimited | off | limit.
 			'quota_n'     => 5,
 			'quota_hours' => 24,
+			'keywords'    => '', // Topic detection words ('' = built-in list chosen by the category name).
 		);
 	}
 

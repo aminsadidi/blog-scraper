@@ -81,6 +81,8 @@ class Fetcher {
 		// The first read of a listing page shows an archive (a tag page may go back weeks): take only the newest
 		// few and treat the rest as already seen.
 		$first_page = 'page' === $cfg['source_type'] && empty( $state['primed'] );
+		// "Start from now": on the very first read nothing is imported; only later stories are.
+		$backlog = ! empty( $cfg['skip_backlog'] ) && empty( $state['primed'] );
 		if ( ! $feed['not_modified'] ) {
 			// "0 = no limit" still stops at 45 days: the seen table forgets entries after 60 days, and an older
 			// entry still sitting in a feed must not be imported a second time.
@@ -106,8 +108,8 @@ class Fetcher {
 					}
 					continue;
 				}
-				if ( count( $candidates ) >= max( 1, (int) $cfg['max_items'] ) ) {
-					if ( $first_page ) {
+				if ( $backlog || count( $candidates ) >= max( 1, (int) $cfg['max_items'] ) ) {
+					if ( $first_page || $backlog ) {
 						Seen::insert(
 							array(
 								'source_id'  => $source_id,
@@ -117,7 +119,7 @@ class Fetcher {
 								'link'       => $item['link'],
 								'feed_sig'   => $sig,
 								'status'     => 'skipped',
-								'note'       => 'خبر قدیمی صفحه در اولین بررسی',
+								'note'       => $backlog ? 'پیش از شروع کار ربات منتشر شده بود' : 'خبر قدیمی صفحه در اولین بررسی',
 							)
 						);
 						$result['skipped']++;
@@ -221,6 +223,27 @@ class Fetcher {
 		return $item && (int) $item->imported_at >= time() - $hours * HOUR_IN_SECONDS;
 	}
 
+	public static function keyword_scope( array $cfg ) {
+		return isset( $cfg['keyword_scope'] ) && in_array( $cfg['keyword_scope'], array( 'title', 'summary', 'all' ), true ) ? $cfg['keyword_scope'] : 'summary';
+	}
+
+	/**
+	 * Whether one of the source's required keywords is in the given texts (true when none are set).
+	 */
+	public static function has_keyword( array $cfg, array $texts ) {
+		$include = array_filter( array_map( array( Util::class, 'normalize_fa' ), Util::lines( $cfg['include_keywords'] ) ) );
+		if ( ! $include ) {
+			return true;
+		}
+		$text = Util::normalize_fa( implode( ' ', array_map( array( Util::class, 'text' ), $texts ) ) );
+		foreach ( $include as $word ) {
+			if ( false !== mb_strpos( $text, $word ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Reasons decidable from the feed entry alone (age, keyword filters, skip rules).
 	 */
@@ -230,18 +253,10 @@ class Fetcher {
 		}
 		$text = Util::normalize_fa( $item['title'] . ' ' . Util::text( $item['description'] ) );
 
-		$include = array_map( array( Util::class, 'normalize_fa' ), Util::lines( $cfg['include_keywords'] ) );
-		if ( $include ) {
-			$hit = false;
-			foreach ( $include as $word ) {
-				if ( '' !== $word && false !== mb_strpos( $text, $word ) ) {
-					$hit = true;
-					break;
-				}
-			}
-			if ( ! $hit ) {
-				return 'کلمه کلیدی لازم را ندارد';
-			}
+		// Only a title-only filter can be decided here; the page's meta description and lead are known after
+		// it is downloaded, so the other scopes are checked by Builder.
+		if ( 'title' === self::keyword_scope( $cfg ) && ! self::has_keyword( $cfg, array( $item['title'] ) ) ) {
+			return 'کلمه کلیدی لازم در عنوان نیست';
 		}
 		foreach ( array_map( array( Util::class, 'normalize_fa' ), Util::lines( $cfg['exclude_keywords'] ) ) as $word ) {
 			if ( '' !== $word && false !== mb_strpos( $text, $word ) ) {

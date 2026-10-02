@@ -55,7 +55,7 @@ class Preview {
 				$report['items'][] = $row;
 				continue;
 			}
-			$cats  = Categorizer::assign( $cfg, $built['has_video'], $built['image_count'], $built['rules'] );
+			$cats  = Categorizer::assign( $cfg, $built['has_video'], $built['image_count'], $built['rules'], $built['topic'] );
 			$names = array();
 			foreach ( $cats['ids'] as $term_id ) {
 				$term    = get_term( $term_id, 'category' );

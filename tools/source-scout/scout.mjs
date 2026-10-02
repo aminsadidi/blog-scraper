@@ -156,7 +156,12 @@ async function inspectPage(page) {
 			title: document.title,
 			site: document.querySelector('meta[property="og:site_name"]')?.content || '',
 			declared_feeds: [...document.querySelectorAll('link[rel="alternate"][type*="rss"], link[rel="alternate"][type*="atom"]')].map((l) => l.href),
-			rss_links: links.filter((l) => /rss|feed/i.test(l.href)).slice(0, 120).map((l) => ({ text: l.text.slice(0, 60), href: l.href })),
+			// The link text is often the address itself; the row around it carries the feed's name.
+			rss_links: links.filter((l) => /rss|feed/i.test(l.href)).slice(0, 500).map((l) => {
+				const row = l.a.closest('tr, li, .rss_row, p, div');
+				const label = clean((row ? row.textContent : '').replace(l.a.textContent, ' ')) || l.text;
+				return { text: label.slice(0, 80), href: l.href };
+			}),
 			filters: [...document.querySelectorAll('select')].map((s) => ({
 				name: s.name || s.id,
 				options: [...s.options].map((o) => ({ value: o.value, label: clean(o.textContent) })).filter((o) => o.label).slice(0, 150),
@@ -214,7 +219,7 @@ function summarize(src) {
 	if (src.page) {
 		src.page.link_groups.slice(0, 2).forEach((g) => lines.push(`گروه لینک ${g.shape} (${g.count}) — ${g.markup}`));
 		if (src.page.declared_feeds.length) lines.push('RSS اعلام‌شده: ' + src.page.declared_feeds.join(' , '));
-		if (src.page.rss_links.length) lines.push(`لینک‌های RSS در صفحه: ${src.page.rss_links.length}`);
+		if (src.page.rss_links.length) lines.push(`لینک‌های RSS در صفحه (${src.page.rss_links.length}):`, ...src.page.rss_links.map((l) => `  ${l.text} => ${l.href}`));
 		src.page.filters.forEach((f) => lines.push(`فیلتر ${f.name}: ` + f.options.map((o) => `${o.value}=${o.label}`).join('، ')));
 	}
 	(src.articles || []).forEach((a) => lines.push(a.error ? `خبر: خطا — ${a.error}` : `خبر: ${a.h1 || a.og_title} | متن: ${a.bodies[0] ? a.bodies[0].selector + ' ' + a.bodies[0].chars + ' حرف' : 'پیدا نشد'} | بلوک پرمتن: ${a.densest_block?.element} | تاریخ: ${a.published || '-'}`));

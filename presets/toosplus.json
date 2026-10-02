@@ -1,0 +1,534 @@
+{
+ "name": "توس پلاس",
+ "version": 1,
+ "roles": [
+  {
+   "category": "فضای مجازی",
+   "role": "topic"
+  },
+  {
+   "category": "ورزشی",
+   "role": "topic"
+  },
+  {
+   "category": "سیاسی",
+   "role": "topic"
+  },
+  {
+   "category": "فرهنگی",
+   "role": "topic"
+  },
+  {
+   "category": "اقتصادی",
+   "role": "topic"
+  },
+  {
+   "category": "بین الملل",
+   "role": "topic"
+  },
+  {
+   "category": "حوادث",
+   "role": "topic"
+  },
+  {
+   "category": "تیتر یک",
+   "role": "section",
+   "chance": 30,
+   "quota": "limit",
+   "quota_n": 4,
+   "quota_hours": 24
+  },
+  {
+   "category": "تیتر دو",
+   "alt": [
+    "تیتر دوم"
+   ],
+   "role": "section",
+   "chance": 70,
+   "quota": "limit",
+   "quota_n": 8,
+   "quota_hours": 24
+  },
+  {
+   "category": "عکس",
+   "role": "photo"
+  },
+  {
+   "category": "فیلم",
+   "alt": [
+    "ویدئو",
+    "ویدیو"
+   ],
+   "role": "video"
+  }
+ ],
+ "settings": {
+  "random_mode": "one",
+  "random_none": 60,
+  "photo_min_images": 4,
+  "noindex": 1,
+  "exclude_site_feed": 1,
+  "links_mode": "nofollow",
+  "attr_enabled": 1,
+  "attr_template": "به نقل از {source}",
+  "attr_position": "end",
+  "attr_link": "article",
+  "attr_rel": "nofollow",
+  "drip_minutes": 3,
+  "dup_titles": 1,
+  "content_dup": 1,
+  "content_dup_threshold": 80,
+  "delete_after_days": 30,
+  "redirect_mode": "category"
+ },
+ "sources": [
+  {
+   "title": "مهر – ورزشی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=9&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "ورزشی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – ورزشی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=24&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "ورزشی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – ورزشی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=14&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "ورزشی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – سیاسی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=7&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "سیاسی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – سیاسی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=14&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "سیاسی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – سیاسی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=5&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "سیاسی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – اقتصادی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=25&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "اقتصادی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – اقتصادی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=34&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "اقتصادی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – اقتصادی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=20&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "اقتصادی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – فرهنگی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=2&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "فرهنگی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – فرهنگی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=20&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "فرهنگی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – فرهنگی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=41&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "فرهنگی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – حوادث مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=770&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "حوادث",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – حوادث مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=65&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "حوادث",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – حوادث مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=817&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "حوادث",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – بین الملل مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=8&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "بین الملل",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – بین الملل مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=17&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "بین الملل",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – بین الملل مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=1&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "بین الملل",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – فضای مجازی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/archive?tp=826&kw=مشهد",
+    "source_type": "page",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "فضای مجازی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایسنا – فضای مجازی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/archive?tp=92&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایسنا",
+    "main_category": "فضای مجازی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "ایرنا – فضای مجازی مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/archive?tp=181&kw=مشهد",
+    "source_type": "page",
+    "source_name": "ایرنا",
+    "main_category": "فضای مجازی",
+    "topic_mode": "fixed",
+    "interval": 30,
+    "max_items": 5
+   }
+  },
+  {
+   "title": "مهر – همه خبرهای مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.mehrnews.com/rss?kw=مشهد",
+    "source_type": "rss",
+    "source_name": "خبرگزاری مهر",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 8
+   }
+  },
+  {
+   "title": "ایسنا – همه خبرهای مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.isna.ir/rss?kw=مشهد",
+    "source_type": "rss",
+    "source_name": "ایسنا",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 8
+   }
+  },
+  {
+   "title": "ایرنا – همه خبرهای مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.irna.ir/rss?kw=مشهد",
+    "source_type": "rss",
+    "source_name": "ایرنا",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 8
+   }
+  },
+  {
+   "title": "خبرآنلاین – مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.khabaronline.ir/rss?kw=مشهد",
+    "source_type": "rss",
+    "source_name": "خبرآنلاین",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 8
+   }
+  },
+  {
+   "title": "همشهری آنلاین – مشهد",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://www.hamshahrionline.ir/rss?kw=مشهد",
+    "source_type": "rss",
+    "source_name": "همشهری آنلاین",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 8
+   }
+  },
+  {
+   "title": "قدس آنلاین",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://qudsonline.ir/rss",
+    "source_type": "rss",
+    "source_name": "قدس آنلاین",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 20,
+    "max_items": 10
+   }
+  },
+  {
+   "title": "شهرآرانیوز",
+   "config": {
+    "include_keywords": "مشهد",
+    "keyword_scope": "summary",
+    "skip_backlog": 1,
+    "active": 1,
+    "url": "https://shahraranews.ir/fa/rss/allnews",
+    "source_type": "rss",
+    "source_name": "شهرآرانیوز",
+    "main_category": "اخبار",
+    "topic_mode": "auto",
+    "interval": 15,
+    "max_items": 10
+   }
+  }
+ ]
+}

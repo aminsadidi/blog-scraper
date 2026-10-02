@@ -21,10 +21,11 @@ class Categorizer {
 	const ROLES = array( 'topic', 'section', 'video', 'photo' );
 
 	/**
-	 * @param array $rules Result of Rules::evaluate().
+	 * @param array      $rules Result of Rules::evaluate().
+	 * @param array|null $topic Result of Topics::detect() when the source detects its topic, else null.
 	 * @return array{ids: int[], primary: int, sections: int[], reasons: array<int, string>}
 	 */
-	public static function assign( array $cfg, $has_video, $image_count, array $rules = array() ) {
+	public static function assign( array $cfg, $has_video, $image_count, array $rules = array(), $topic = null ) {
 		$ids      = array();
 		$reasons  = array();
 		$sections = array();
@@ -39,7 +40,12 @@ class Categorizer {
 			return false;
 		};
 
-		$add( $cfg['main_category'], 'اصلی' );
+		if ( is_array( $topic ) && ! empty( $topic['term'] ) ) {
+			$add( $topic['term'], 'تشخیص موضوع: ' . implode( '، ', array_slice( (array) $topic['words'], 0, 3 ) ) );
+		}
+		if ( ! $ids ) {
+			$add( $cfg['main_category'], is_array( $topic ) ? 'اصلی (موضوع تشخیص داده نشد)' : 'اصلی' );
+		}
 		foreach ( (array) $cfg['extra_categories'] as $term_id ) {
 			$add( $term_id, 'ثابت' );
 		}
@@ -184,9 +190,20 @@ class Categorizer {
 				'quota'       => in_array( $quota, array( 'unlimited', 'off', 'limit' ), true ) ? $quota : 'unlimited',
 				'quota_n'     => isset( $row['quota_n'] ) ? absint( $row['quota_n'] ) : 5,
 				'quota_hours' => isset( $row['quota_hours'] ) ? max( 1, absint( $row['quota_hours'] ) ) : 24,
+				'keywords'    => isset( $row['keywords'] ) ? self::clean_words( $row['keywords'], $term_id ) : '',
 			);
 		}
 		return $roles;
+	}
+
+	/**
+	 * Topic words as posted; the unchanged built-in list is stored as '' so later improvements to it apply.
+	 */
+	private static function clean_words( $words, $term_id ) {
+		$words = implode( '، ', Topics::split( sanitize_textarea_field( $words ) ) );
+		$term  = get_term( $term_id, 'category' );
+		$def   = $term && ! is_wp_error( $term ) ? implode( '، ', Topics::split( Topics::default_words( $term->name ) ) ) : '';
+		return $words === $def ? '' : $words;
 	}
 
 	public static function role_label( $role ) {

@@ -11,6 +11,7 @@ use ParsiNewsRobot\Installer;
 use ParsiNewsRobot\Settings;
 use ParsiNewsRobot\Sources;
 use ParsiNewsRobot\Taxonomy\Categorizer;
+use ParsiNewsRobot\Taxonomy\Topics;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -36,6 +37,7 @@ class CategoriesPage {
 				<li><strong>موضوعی:</strong> مثل سیاسی، ورزشی، اقتصادی. در تنظیمات هر منبع یکی از این‌ها «دسته اصلی» می‌شود و خبر حتماً در آن منتشر می‌شود.</li>
 				<li><strong>بخش صفحه اصلی:</strong> مثل تیتر یک، تیتر دوم، نوار کناری. خبرها به صورت تصادفی و با رعایت «شانس» و «سهمیه» در این‌ها هم قرار می‌گیرند.</li>
 				<li><strong>ویدئو / عکس:</strong> خبرهایی که ویدئو دارند، یا غیر از تصویر شاخص عکس دارند، در این دسته‌ها هم قرار می‌گیرند.</li>
+				<li><strong>تشخیص خودکار موضوع:</strong> اگر منبعی خبرهای همه موضوع‌ها را دارد (مثل خبرهای «مشهد» یک خبرگزاری)، در تنظیمات آن منبع «تشخیص خودکار» را بزنید. ربات از روی کلمات عنوان، دسته خبر در RSS و متن، مناسب‌ترین دسته موضوعی را انتخاب می‌کند. کلمات هر دسته موضوعی زیر نقش آن قابل ویرایش است؛ برای دسته‌های رایج (ورزشی، سیاسی، حوادث و…) فهرست آماده پر شده است.</li>
 				<li><strong>بدون نقش:</strong> ربات به این دسته کاری ندارد (مگر اینکه در یک منبع صریحاً انتخابش کنید).</li>
 			</ul>
 			<p>سهمیه فقط خبرهای ربات را می‌شمارد؛ خبرهایی که خودتان منتشر می‌کنید هیچ‌وقت شمرده یا محدود نمی‌شوند.</p>
@@ -79,7 +81,12 @@ class CategoriesPage {
 								),
 								array( 'class' => 'pnr-role-select' )
 							);
+							$words = '' !== trim( (string) $role['keywords'] ) ? $role['keywords'] : Topics::default_words( $term->name );
 							?>
+							<div class="pnr-topic-words">
+								<small>کلمات تشخیص موضوع (با ، یا خط جدید جدا کنید):</small>
+								<?php Form::textarea( $n . '[keywords]', $words, 3, array( 'placeholder' => 'مثال: فوتبال، لیگ، باشگاه' ) ); ?>
+							</div>
 						</td>
 						<td class="pnr-section-only"><span><?php Form::number( $n . '[chance]', $role['chance'], 0, 100 ); ?>٪</span></td>
 						<td class="pnr-section-only">

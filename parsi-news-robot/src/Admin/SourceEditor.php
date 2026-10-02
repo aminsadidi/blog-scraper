@@ -106,6 +106,8 @@ class SourceEditor {
 					<tr><th>فعال</th><td><?php Form::checkbox( $n( 'active' ), $c['active'], 'این منبع خودکار بررسی شود' ); ?></td></tr>
 					<tr><th>فاصله بررسی</th><td><?php Form::number( $n( 'interval' ), $c['interval'], 1, 1440 ); ?> دقیقه
 						<p class="description">اگر منبع چند بار پشت سر هم خبر جدید نداشته باشد، فاصله به‌طور خودکار تا ۴ برابر بیشتر می‌شود (قابل خاموش کردن در تنظیمات).</p></td></tr>
+					<tr><th>شروع کار</th><td><?php Form::checkbox( $n( 'skip_backlog' ), $c['skip_backlog'], 'از همین الان: خبرهایی که هنگام اولین بررسی در منبع هستند منتشر نشوند' ); ?>
+						<p class="description">فقط روی اولین بررسی (و بعد از تغییر آدرس) اثر دارد.</p></td></tr>
 					<tr><th>حداکثر خبر در هر بررسی</th><td><?php Form::number( $n( 'max_items' ), $c['max_items'], 1, 50 ); ?></td></tr>
 					<tr><th>خبرهای قدیمی‌تر از</th><td><?php Form::number( $n( 'max_age_hours' ), $c['max_age_hours'], 0, 720 ); ?> ساعت وارد نشوند <span class="description">(۰ = بدون محدودیت تا سقف ۴۵ روز)</span></td></tr>
 					<tr><th>ساعت کاری</th><td>از <input type="time" name="<?php echo esc_attr( $n( 'hours_from' ) ); ?>" value="<?php echo esc_attr( $c['hours_from'] ); ?>"> تا <input type="time" name="<?php echo esc_attr( $n( 'hours_to' ) ); ?>" value="<?php echo esc_attr( $c['hours_to'] ); ?>">
@@ -129,6 +131,19 @@ class SourceEditor {
 							printf( '<a href="%s">مدیریت نقش دسته‌ها</a>', esc_url( admin_url( 'admin.php?page=pnr-categories' ) ) );
 							?>
 						</p>
+					</td></tr>
+					<tr><th>تعیین دسته موضوعی</th><td>
+						<?php
+						Form::radios(
+							$n( 'topic_mode' ),
+							$c['topic_mode'],
+							array(
+								'fixed' => array( 'همیشه دسته اصلی', 'برای منبعی که فقط یک موضوع دارد (مثلاً RSS ورزشی).' ),
+								'auto'  => array( 'تشخیص خودکار از روی کلمات', 'برای منبعی با موضوع‌های مختلف (مثلاً همه خبرهای مشهد). اگر موضوع با اطمینان تشخیص داده نشود، خبر در «دسته اصلی» بالا قرار می‌گیرد.' ),
+							)
+						);
+						?>
+						<p class="description">کلمات هر موضوع در <a href="<?php echo esc_url( admin_url( 'admin.php?page=pnr-categories' ) ); ?>">دسته‌ها و بخش‌ها</a> قابل ویرایش است. نتیجه را در تب «تست منبع» ببینید.</p>
 					</td></tr>
 					<tr><th>دسته‌های ثابت اضافه</th><td><?php Form::category_checklist( $n( 'extra_categories' ), (array) $c['extra_categories'] ); ?>
 						<p class="description">هر خبر این منبع همیشه در این دسته‌ها هم قرار می‌گیرد (اختیاری).</p></td></tr>
@@ -410,7 +425,19 @@ class SourceEditor {
 			<div class="pnr-tab" id="pnr-tab-filters">
 				<table class="form-table">
 					<tr><th>فقط خبرهای شامل</th><td><?php Form::textarea( $n( 'include_keywords' ), $c['include_keywords'], 3 ); ?>
-						<p class="description">اختیاری. هر خط یک کلمه؛ فقط خبرهایی که در عنوان یا خلاصه یکی از این کلمات را دارند وارد می‌شوند.</p></td></tr>
+						<p class="description">اختیاری. هر خط یک کلمه؛ کافی است یکی از آن‌ها پیدا شود.</p>
+						<?php
+						Form::select(
+							$n( 'keyword_scope' ),
+							$c['keyword_scope'],
+							array(
+								'summary' => 'جستجو در عنوان، توضیحات متا و چکیده خبر',
+								'title'   => 'جستجو فقط در عنوان',
+								'all'     => 'جستجو در کل خبر (همراه متن کامل)',
+							)
+						);
+						?>
+					</td></tr>
 					<tr><th>خبرهای شامل این کلمات وارد نشوند</th><td><?php Form::textarea( $n( 'exclude_keywords' ), $c['exclude_keywords'], 3 ); ?></td></tr>
 					<tr><th>حداقل طول متن</th><td><?php Form::number( $n( 'min_words' ), $c['min_words'], 0, 5000 ); ?> کلمه <span class="description">(۰ = بدون محدودیت)</span></td></tr>
 					<tr><th>تصویر</th><td><?php Form::checkbox( $n( 'require_image' ), $c['require_image'], 'خبرهای بدون تصویر وارد نشوند' ); ?></td></tr>
@@ -541,12 +568,14 @@ class SourceEditor {
 			'active'              => Form::bool( $in, 'active' ),
 			'interval'            => Form::int( $in, 'interval', 1, 1440, $d['interval'] ),
 			'max_items'           => Form::int( $in, 'max_items', 1, 50, $d['max_items'] ),
+			'skip_backlog'        => Form::bool( $in, 'skip_backlog' ),
 			'max_age_hours'       => Form::int( $in, 'max_age_hours', 0, 720, $d['max_age_hours'] ),
 			'hours_from'          => isset( $in['hours_from'] ) && preg_match( '/^\d{1,2}:\d{2}$/', $in['hours_from'] ) ? $in['hours_from'] : '',
 			'hours_to'            => isset( $in['hours_to'] ) && preg_match( '/^\d{1,2}:\d{2}$/', $in['hours_to'] ) ? $in['hours_to'] : '',
 			'drip_minutes'        => Form::int( $in, 'drip_minutes', 0, 240, -1 ),
 
 			'main_category'       => Form::int( $in, 'main_category', 0 ),
+			'topic_mode'          => Form::choice( $in, 'topic_mode', array( 'fixed', 'auto' ), 'fixed' ),
 			'extra_categories'    => Form::ids( $in, 'extra_categories' ),
 			'random_scope'        => Form::choice( $in, 'random_scope', array( 'inherit', 'custom', 'off' ), 'inherit' ),
 			'random_sections'     => Form::ids( $in, 'random_sections' ),
@@ -584,6 +613,7 @@ class SourceEditor {
 			'author'              => Form::int( $in, 'author', 0 ),
 			'post_status'         => Form::choice( $in, 'post_status', array( 'inherit', 'publish', 'pending', 'draft' ), 'inherit' ),
 			'include_keywords'    => Form::textarea_value( $in, 'include_keywords' ),
+			'keyword_scope'       => Form::choice( $in, 'keyword_scope', array( 'summary', 'title', 'all' ), 'summary' ),
 			'exclude_keywords'    => Form::textarea_value( $in, 'exclude_keywords' ),
 			'min_words'           => Form::int( $in, 'min_words', 0, 5000, 0 ),
 			'require_image'       => Form::bool( $in, 'require_image' ),
@@ -612,7 +642,7 @@ class SourceEditor {
 			'last_modified' => '',
 		);
 		if ( $old['url'] !== $new['url'] || $old['source_type'] !== $new['source_type'] ) {
-			$reset['primed'] = 0; // A new listing page: its archive is skipped again on the first read.
+			$reset['primed'] = 0; // A new listing page (or "start from now"): its archive is skipped again on the first read.
 		}
 		Sources::set_state( $post_id, $reset );
 		if ( $old['index_mode'] !== $new['index_mode'] ) {
