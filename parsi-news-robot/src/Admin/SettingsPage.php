@@ -268,7 +268,10 @@ class SettingsPage {
 						?>
 					</td></tr>
 					<tr><th>کران واقعی سرور</th><td>
-						<p>در سایت‌های کم‌بازدید، زمان‌بند وردپرس فقط با بازدید اجرا می‌شود. برای دقت بیشتر این دستور را در کران‌جاب هاست (هر ۵ دقیقه) بگذارید:</p>
+						<p>در سایت‌های کم‌بازدید، زمان‌بند وردپرس فقط با بازدید اجرا می‌شود. این آدرس را هر ۵ دقیقه یک بار باز کنید؛ با یک سرویس کران آنلاین (مثل cron-job.org) اگر به هاست دسترسی ندارید:</p>
+						<code class="pnr-code" dir="ltr"><?php echo esc_html( Queue::cron_url() ); ?></code>
+						<p><button type="button" class="button pnr-copy" data-copy="<?php echo esc_attr( Queue::cron_url() ); ?>">کپی آدرس</button></p>
+						<p>یا اگر به کران‌جاب هاست دسترسی دارید، این دستور را آنجا بگذارید:</p>
 						<code class="pnr-code" dir="ltr">*/5 * * * * wget -q -O /dev/null "<?php echo esc_html( Queue::cron_url() ); ?>"</code>
 						<p><button type="button" class="button pnr-copy" data-copy="<?php echo esc_attr( '*/5 * * * * wget -q -O /dev/null "' . Queue::cron_url() . '"' ); ?>">کپی</button>
 						<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=pnr_new_cron_key' ), 'pnr_new_cron_key' ) ); ?>">ساخت کلید جدید</a></p>

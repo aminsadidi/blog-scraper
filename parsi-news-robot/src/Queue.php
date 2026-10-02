@@ -180,17 +180,23 @@ class Queue {
 		if ( get_transient( 'pnr_cron_lock' ) ) {
 			exit( 'busy' );
 		}
-		set_transient( 'pnr_cron_lock', 1, 45 );
+		set_transient( 'pnr_cron_lock', 1, 90 );
+		update_option( 'pnr_last_external_cron', time(), false );
 		ignore_user_abort( true );
 		if ( function_exists( 'set_time_limit' ) ) {
 			@set_time_limit( 120 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
 		}
+		// Online cron services wait only ~30 seconds: answer at once where the server allows it, then work.
+		$early = function_exists( 'fastcgi_finish_request' ) || function_exists( 'litespeed_finish_request' );
+		if ( $early ) {
+			echo 'ok';
+			function_exists( 'fastcgi_finish_request' ) ? fastcgi_finish_request() : litespeed_finish_request();
+		}
 		self::ensure_schedules( true );
 		self::tick();
-		$done = self::run_pending( 50 );
+		$done = self::run_pending( $early ? 50 : 20 );
 		delete_transient( 'pnr_cron_lock' );
-		update_option( 'pnr_last_external_cron', time(), false );
-		exit( 'ok ' . (int) $done );
+		exit( $early ? '' : 'ok ' . (int) $done );
 	}
 
 	/**
