@@ -160,7 +160,7 @@ class FeedReader {
 		return $feed;
 	}
 
-	private static function normalize_item( $item, $feed_url ) {
+	public static function normalize_item( $item, $feed_url ) {
 		$link = (string) $item->get_permalink();
 		$link = $link ? Util::absolute_url( $link, $feed_url ) : '';
 

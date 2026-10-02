@@ -41,6 +41,7 @@ class Admin {
 		add_action( 'wp_ajax_pnr_discover', array( __CLASS__, 'ajax_discover' ) );
 
 		SourceEditor::init();
+		ProbePage::init();
 		PostIntegration::init();
 	}
 
@@ -53,6 +54,7 @@ class Admin {
 		add_submenu_page( self::SLUG, 'قوانین کلمه کلیدی', 'قوانین', $cap, 'pnr-rules', array( RulesPage::class, 'render' ) );
 		add_submenu_page( self::SLUG, 'تنظیمات ربات خبر', 'تنظیمات', $cap, 'pnr-settings', array( SettingsPage::class, 'render' ) );
 		add_submenu_page( self::SLUG, 'گزارش‌ها', 'گزارش‌ها', $cap, 'pnr-logs', array( LogsPage::class, 'render' ) );
+		add_submenu_page( self::SLUG, 'بررسی منبع‌ها', 'بررسی منبع‌ها', $cap, 'pnr-probe', array( ProbePage::class, 'render' ) );
 	}
 
 	/**
@@ -260,6 +262,7 @@ class Admin {
 			'pnr-rules'                              => 'قوانین',
 			'pnr-settings'                           => 'تنظیمات',
 			'pnr-logs'                               => 'گزارش‌ها',
+			'pnr-probe'                              => 'بررسی منبع‌ها',
 		);
 		echo '<nav class="nav-tab-wrapper pnr-tabs">';
 		foreach ( $tabs as $slug => $label ) {

@@ -120,6 +120,62 @@
 		$( this ).closest( 'tr' ).remove();
 	} );
 
+	// Source probe tool: checks addresses one by one (each request stays inside PHP's time limit).
+	$( document ).on( 'click', '#pnr-probe-suggest', function () {
+		var kw = $( '#pnr-probe-kw' ).val() || '';
+		var list = JSON.parse( $( '#pnr-probe-suggestions' ).text() || '[]' ).map( function ( u ) {
+			return u.replace( 'KEYWORD', encodeURIComponent( kw ) );
+		} );
+		var $t = $( '#pnr-probe-urls' );
+		$t.val( ( $t.val() ? $t.val().trim() + '\n' : '' ) + list.join( '\n' ) );
+	} );
+	$( document ).on( 'click', '#pnr-probe-run', function () {
+		var urls = ( $( '#pnr-probe-urls' ).val() || '' ).split( /\s*\n\s*/ ).filter( Boolean );
+		var $btn = $( this ).prop( 'disabled', true );
+		var $out = $( '#pnr-probe-results' ).html( '<table class="widefat striped pnr-table"><thead><tr><th>آدرس</th><th>نوع</th><th>تعداد</th><th>شامل کلمه</th><th>متن کامل</th><th>نتیجه</th></tr></thead><tbody></tbody></table>' );
+		var $report = $( '#pnr-probe-report' ).val( '' );
+		var i = 0;
+		var next = function () {
+			if ( i >= urls.length ) {
+				$( '#pnr-probe-status' ).text( 'تمام شد.' );
+				$btn.prop( 'disabled', false );
+				return;
+			}
+			var url = urls[ i++ ];
+			$( '#pnr-probe-status' ).text( 'در حال بررسی ' + i + ' از ' + urls.length + '…' );
+			$.post( cfg.ajax, { action: 'pnr_probe_url', nonce: cfg.nonce, url: url, kw: $( '#pnr-probe-kw' ).val(), deep: $( '#pnr-probe-deep' ).is( ':checked' ) ? 1 : '' } )
+				.done( function ( res ) {
+					var d = res && res.success ? res.data : { ok: false, error: ( res && res.data ) || cfg.error, report: '### ' + url + '\nخطا' };
+					var $tr = $( '<tr/>' );
+					$( '<td dir="ltr"/>' ).text( decodeURIComponent( url ) ).appendTo( $tr );
+					$( '<td/>' ).text( d.type || '-' ).appendTo( $tr );
+					$( '<td/>' ).text( d.count || 0 ).appendTo( $tr );
+					$( '<td/>' ).text( d.share === null || d.share === undefined ? '-' : d.share + '٪' ).appendTo( $tr );
+					$( '<td/>' ).text( d.words ? d.words + ' کلمه' : '-' ).appendTo( $tr );
+					$( '<td/>' ).html( d.ok ? '<span class="pnr-badge ok">قابل استفاده</span>' : '<span class="pnr-badge error"></span>' ).appendTo( $tr );
+					if ( ! d.ok ) {
+						$tr.find( '.pnr-badge.error' ).text( d.error || 'خبری پیدا نشد' );
+					}
+					$out.find( 'tbody' ).append( $tr );
+					$report.val( $report.val() + d.report + '\n\n' );
+				} )
+				.fail( function () {
+					$report.val( $report.val() + '### ' + url + '\nخطای ارتباط با سرور (احتمالاً زمان اجرا تمام شد)\n\n' );
+				} )
+				.always( next );
+		};
+		next();
+	} );
+	$( document ).on( 'click', '.pnr-copy-report', function () {
+		var $t = $( '#pnr-probe-report' ).trigger( 'select' );
+		if ( navigator.clipboard ) {
+			navigator.clipboard.writeText( $t.val() );
+		} else {
+			document.execCommand( 'copy' );
+		}
+		$( this ).text( cfg.copied );
+	} );
+
 	// Confirmations.
 	$( document ).on( 'click', '.pnr-confirm', function ( e ) {
 		if ( ! window.confirm( $( this ).data( 'confirm' ) || cfg.confirm ) ) {
