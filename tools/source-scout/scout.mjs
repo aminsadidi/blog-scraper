@@ -207,7 +207,7 @@ function summarize(src) {
 	const lines = [`### ${src.url}`];
 	if (src.error) return lines.concat(`خطا: ${src.error}`).join('\n');
 	lines.push(`نوع: ${src.kind} | وضعیت HTTP: ${src.status}${src.challenge ? ' | دیوار امنیتی' : ''}${src.items ? ` | خبرها: ${src.items.length} | شامل «${KEYWORD}»: ${src.keyword_share}٪` : ''}`);
-	if (src.categories) lines.push('دسته‌های RSS: ' + Object.entries(src.categories).map(([k, v]) => `${k} (${v})`).join(' / '));
+	if (src.categories && Object.keys(src.categories).length) lines.push('دسته‌های RSS: ' + Object.entries(src.categories).map(([k, v]) => `${k} (${v})`).join(' / '));
 	(src.items || []).slice(0, 5).forEach((i) => lines.push(`- ${i.title}${i.categories.length ? ' [' + i.categories.join('، ') + ']' : ''}`));
 	if (src.page) {
 		src.page.link_groups.slice(0, 2).forEach((g) => lines.push(`گروه لینک ${g.shape} (${g.count}) — ${g.markup}`));
