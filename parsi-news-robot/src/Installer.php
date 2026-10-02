@@ -21,6 +21,23 @@ class Installer {
 			add_option( 'pnr_activated_at', time(), '', false );
 		}
 		set_transient( 'pnr_welcome', 1, HOUR_IN_SECONDS );
+		self::skip_scheduler_migration();
+	}
+
+	/**
+	 * Action Scheduler checks on every page view whether old (pre-3.0) jobs stored as posts still need moving
+	 * to its tables, until its one-time migration has run. On a site that has no such jobs there is nothing
+	 * to move, so the migration is marked done right away and those checks never happen.
+	 */
+	public static function skip_scheduler_migration() {
+		global $wpdb;
+		if ( 'complete' === get_option( 'action_scheduler_migration_status' ) ) {
+			return;
+		}
+		$legacy = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", 'scheduled-action' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( 0 === $legacy ) {
+			update_option( 'action_scheduler_migration_status', 'complete' );
+		}
 	}
 
 	public static function deactivate() {
@@ -40,6 +57,7 @@ class Installer {
 		if ( $installed < PNR_DB_VERSION ) {
 			self::install_schema();
 			self::grant_capability();
+			self::skip_scheduler_migration();
 			if ( $installed > 0 && $installed < 3 ) {
 				Import\Similarity::backfill(); // v3 added body-text duplicate detection.
 			}

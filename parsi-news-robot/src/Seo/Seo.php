@@ -111,7 +111,7 @@ class Seo {
 	}
 
 	public static function rank_math_sitemap_entry( $url, $type, $object ) {
-		if ( 'post' === $type && is_object( $object ) && ! empty( $object->ID ) && self::is_noindex( $object->ID ) ) {
+		if ( 'post' === $type && is_object( $object ) && ! empty( $object->ID ) && isset( self::hidden_ids()[ (int) $object->ID ] ) ) {
 			return false;
 		}
 		return $url;
@@ -122,9 +122,21 @@ class Seo {
 	}
 
 	public static function yoast_sitemap_exclude( $ids ) {
-		global $wpdb;
-		$hidden = $wpdb->get_col( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = '1'", self::FLAG ) ); // phpcs:ignore WordPress.DB
-		return array_merge( (array) $ids, array_map( 'intval', $hidden ) );
+		return array_merge( (array) $ids, array_keys( self::hidden_ids() ) );
+	}
+
+	/**
+	 * Ids of every post kept out of the index, loaded with one query per request (sitemaps only).
+	 *
+	 * @return array<int, true>
+	 */
+	private static function hidden_ids() {
+		static $ids = null;
+		if ( null === $ids ) {
+			global $wpdb;
+			$ids = array_fill_keys( array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = '1'", self::FLAG ) ) ), true ); // phpcs:ignore WordPress.DB
+		}
+		return $ids;
 	}
 
 	public static function exclude_from_site_feed( $query ) {

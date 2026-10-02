@@ -24,6 +24,9 @@ class Queue {
 	const UPDATE  = 'pnr_update_item';
 	const CLEANUP = 'pnr_cleanup';
 	const SYNC    = 'pnr_sync_flags';
+	/** How often due sources are looked for. Sources keep their own interval; this is only the granularity. */
+	const TICK_SECONDS = 300;
+
 	const HOOKS   = array( self::TICK, self::FETCH, self::IMPORT, self::UPDATE, self::CLEANUP, self::SYNC );
 
 	public static function init() {
@@ -52,8 +55,13 @@ class Queue {
 		if ( ! self::available() || ( ! $force && get_transient( 'pnr_schedule_checked' ) ) ) {
 			return;
 		}
+		// Earlier versions ticked every minute: replace that schedule once.
+		if ( (int) get_option( 'pnr_tick_seconds' ) !== self::TICK_SECONDS ) {
+			as_unschedule_all_actions( self::TICK, array(), self::GROUP );
+			update_option( 'pnr_tick_seconds', self::TICK_SECONDS, false );
+		}
 		if ( ! as_has_scheduled_action( self::TICK, array(), self::GROUP ) ) {
-			as_schedule_recurring_action( time() + 30, MINUTE_IN_SECONDS, self::TICK, array(), self::GROUP, true );
+			as_schedule_recurring_action( time() + 30, self::TICK_SECONDS, self::TICK, array(), self::GROUP, true );
 		}
 		if ( ! as_has_scheduled_action( self::CLEANUP, array(), self::GROUP ) ) {
 			as_schedule_recurring_action( time() + 300, HOUR_IN_SECONDS, self::CLEANUP, array(), self::GROUP, true );
@@ -183,6 +191,45 @@ class Queue {
 		delete_transient( 'pnr_cron_lock' );
 		update_option( 'pnr_last_external_cron', time(), false );
 		exit( 'ok ' . (int) $done );
+	}
+
+	/**
+	 * Deletes this plugin's finished jobs older than two days (with their logs). Action Scheduler itself keeps
+	 * them for a month, which for a few dozen sources means hundreds of thousands of rows.
+	 *
+	 * @return int Jobs deleted.
+	 */
+	public static function prune_finished( $limit = 1000 ) {
+		if ( ! self::available() || ! function_exists( 'as_get_scheduled_actions' ) || ! class_exists( '\ActionScheduler' ) ) {
+			return 0;
+		}
+		$store   = \ActionScheduler::store();
+		$deleted = 0;
+		foreach ( array( \ActionScheduler_Store::STATUS_COMPLETE, \ActionScheduler_Store::STATUS_FAILED, \ActionScheduler_Store::STATUS_CANCELED ) as $status ) {
+			$ids = as_get_scheduled_actions(
+				array(
+					'group'        => self::GROUP,
+					'status'       => $status,
+					'date'         => gmdate( 'Y-m-d H:i:s', time() - 2 * DAY_IN_SECONDS ),
+					'date_compare' => '<=',
+					'per_page'     => max( 1, $limit - $deleted ),
+					'orderby'      => 'none',
+				),
+				'ids'
+			);
+			foreach ( (array) $ids as $id ) {
+				try {
+					$store->delete_action( $id );
+					$deleted++;
+				} catch ( \Exception $e ) {
+					continue;
+				}
+			}
+			if ( $deleted >= $limit ) {
+				break;
+			}
+		}
+		return $deleted;
 	}
 
 	public static function cron_url() {

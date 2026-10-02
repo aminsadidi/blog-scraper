@@ -25,14 +25,15 @@ class Links {
 
 	public static function filter_content( $content ) {
 		$post = get_post();
-		if ( ! $post || ! get_post_meta( $post->ID, Items::META, true ) ) {
+		// The post's meta is already loaded with the query, so lists of posts cost no extra queries here.
+		$source_id = $post ? (int) get_post_meta( $post->ID, Items::META, true ) : 0;
+		if ( ! $source_id ) {
 			return $content;
 		}
-		$item = Items::get( $post->ID );
-		$cfg  = $item && Sources::exists( $item->source_id ) ? Sources::config( $item->source_id ) : Settings::source_defaults();
+		$cfg  = self::source_config( $source_id );
 		$attr = Settings::attribution( $cfg );
-		if ( $item && is_singular() && in_the_loop() && is_main_query() && (int) get_queried_object_id() === (int) $post->ID ) {
-			$line = self::attribution_html( $attr, $item, $post->ID );
+		if ( is_singular() && in_the_loop() && is_main_query() && (int) get_queried_object_id() === (int) $post->ID ) {
+			$line = self::attribution_html( $attr, Items::get( $post->ID ), $post->ID );
 			if ( '' !== $line ) {
 				$content = 'start' === $attr['position'] ? $line . "\n" . $content : $content . "\n" . $line;
 			}
@@ -90,6 +91,17 @@ class Links {
 	/**
 	 * The attribution line of a robot post.
 	 */
+	/**
+	 * A source's settings, read once per page view.
+	 */
+	private static function source_config( $source_id ) {
+		static $cache = array();
+		if ( ! isset( $cache[ $source_id ] ) ) {
+			$cache[ $source_id ] = Sources::exists( $source_id ) ? Sources::config( $source_id ) : Settings::source_defaults();
+		}
+		return $cache[ $source_id ];
+	}
+
 	public static function attribution_html( array $attr, $item, $post_id ) {
 		if ( ! $attr['enabled'] || ! $item ) {
 			return '';

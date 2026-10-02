@@ -3,7 +3,7 @@
  * Plugin Name:       ربات خبر پارسی
  * Plugin URI:        https://github.com/aminsadidi/blog-scraper
  * Description:       دریافت خودکار خبر از RSS سایت‌های دیگر با متن کامل، تصویر و ویدئو؛ دسته‌بندی بر اساس نقش دسته‌های سایت (دسته اصلی، بخش‌های صفحه اصلی با سهمیه، عکس و ویدئو)؛ پنهان از گوگل و سایت‌مپ (سازگار با رنک مث)؛ حذف خودکار با ریدایرکت.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * License:           GPL-2.0-or-later
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PNR_VERSION', '1.1.0' );
+define( 'PNR_VERSION', '1.1.1' );
 define( 'PNR_DB_VERSION', 3 );
 define( 'PNR_FILE', __FILE__ );
 define( 'PNR_DIR', plugin_dir_path( __FILE__ ) );

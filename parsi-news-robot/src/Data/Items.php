@@ -56,6 +56,28 @@ class Items {
 	/**
 	 * @return object|null
 	 */
+	/**
+	 * Loads the rows of many posts with one query (e.g. a page of the admin post list).
+	 */
+	public static function prime( array $post_ids ) {
+		global $wpdb;
+		$ids = array();
+		foreach ( array_map( 'intval', $post_ids ) as $id ) {
+			$found = false;
+			wp_cache_get( $id, 'pnr_items', false, $found );
+			if ( $id && ! $found ) {
+				$ids[] = $id;
+			}
+		}
+		if ( ! $ids ) {
+			return;
+		}
+		$rows = $wpdb->get_results( 'SELECT * FROM ' . self::table() . ' WHERE post_id IN (' . implode( ',', $ids ) . ')', OBJECT_K ); // phpcs:ignore WordPress.DB -- integers only.
+		foreach ( $ids as $id ) {
+			wp_cache_set( $id, isset( $rows[ $id ] ) ? $rows[ $id ] : 0, 'pnr_items' );
+		}
+	}
+
 	public static function get( $post_id ) {
 		global $wpdb;
 		$post_id = (int) $post_id;

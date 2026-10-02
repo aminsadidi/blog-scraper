@@ -109,8 +109,8 @@ class Dashboard {
 		$tick = (int) get_option( 'pnr_last_tick', 0 );
 		if ( ! $tick ) {
 			$checks[] = array( 'warn', 'زمان‌بند هنوز اجرا نشده است. چند دقیقه صبر کنید یا دکمه «بررسی همه منابع» را بزنید.' );
-		} elseif ( $tick < time() - 10 * MINUTE_IN_SECONDS ) {
-			$checks[] = array( 'warn', 'زمان‌بند بیش از ۱۰ دقیقه است اجرا نشده. در سایت‌های کم‌بازدید کران واقعی سرور را تنظیم کنید.' );
+		} elseif ( $tick < time() - 15 * MINUTE_IN_SECONDS ) {
+			$checks[] = array( 'warn', 'زمان‌بند بیش از ۱۵ دقیقه است اجرا نشده. در سایت‌های کم‌بازدید کران واقعی سرور را تنظیم کنید.' );
 		} else {
 			$checks[] = array( 'ok', 'زمان‌بند مرتب اجرا می‌شود.' );
 		}

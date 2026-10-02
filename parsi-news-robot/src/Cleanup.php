@@ -54,6 +54,7 @@ class Cleanup {
 		Placements::prune( 45 );
 		Redirects::prune( (int) $settings['redirect_keep_days'] );
 		self::requeue_stuck();
+		Queue::prune_finished();
 		update_option( 'pnr_last_cleanup', time(), false );
 		return $deleted;
 	}

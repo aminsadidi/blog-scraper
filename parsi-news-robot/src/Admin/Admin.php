@@ -135,8 +135,12 @@ class Admin {
 		}
 		if ( get_transient( 'pnr_welcome' ) && ! self::is_plugin_screen() ) {
 			delete_transient( 'pnr_welcome' );
+			$text = get_option( \ParsiNewsRobot\Preset::OPTION )
+				? 'پیکربندی آماده سایت اعمال شد و ربات کارش را شروع کرده است؛ فقط خبرهای جدید منتشر می‌شوند.'
+				: 'برای شروع، اول به دسته‌های سایت نقش بدهید و بعد منبع خبر اضافه کنید.';
 			printf(
-				'<div class="notice notice-info is-dismissible"><p><strong>ربات خبر فعال شد.</strong> برای شروع، اول به دسته‌های سایت نقش بدهید و بعد منبع خبر اضافه کنید. <a href="%s">رفتن به پیشخوان ربات خبر</a></p></div>',
+				'<div class="notice notice-info is-dismissible"><p><strong>ربات خبر فعال شد.</strong> %s <a href="%s">رفتن به پیشخوان ربات خبر</a></p></div>',
+				esc_html( $text ),
 				esc_url( admin_url( 'admin.php?page=' . self::SLUG ) )
 			);
 		}

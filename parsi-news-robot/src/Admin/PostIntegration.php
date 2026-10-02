@@ -90,6 +90,12 @@ class PostIntegration {
 		if ( 'pnr_source' !== $column ) {
 			return;
 		}
+		static $primed = false;
+		if ( ! $primed ) {
+			global $wp_query;
+			$primed = true;
+			Items::prime( $wp_query && $wp_query->posts ? wp_list_pluck( $wp_query->posts, 'ID' ) : array() );
+		}
 		$item = Items::get( $post_id );
 		if ( ! $item ) {
 			echo '—';

@@ -34,18 +34,28 @@ class Preset {
 		if ( ! is_readable( $file ) ) {
 			return;
 		}
+		// Cheap check first (size + time of the file): the preset is read only when it changed.
+		$stamp = filesize( $file ) . ':' . filemtime( $file );
+		if ( get_option( 'pnr_preset_stamp' ) === $stamp ) {
+			return;
+		}
 		$preset = json_decode( (string) file_get_contents( $file ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local file.
 		if ( ! is_array( $preset ) ) {
 			return;
 		}
 		$key = md5( wp_json_encode( $preset ) );
-		if ( get_option( self::OPTION ) === $key || get_transient( 'pnr_preset_lock' ) ) {
+		if ( get_option( self::OPTION ) === $key ) {
+			update_option( 'pnr_preset_stamp', $stamp, true );
+			return;
+		}
+		if ( get_transient( 'pnr_preset_lock' ) ) {
 			return;
 		}
 		set_transient( 'pnr_preset_lock', 1, 5 * MINUTE_IN_SECONDS );
 		// Roles and settings only the first time: later preset versions must not undo the owner's changes.
 		$report = self::apply( $preset, false === get_option( self::OPTION, false ) );
 		update_option( self::OPTION, $key, true );
+		update_option( 'pnr_preset_stamp', $stamp, true );
 		update_option( 'pnr_preset_report', $report, false );
 		delete_transient( 'pnr_preset_lock' );
 		Log::info( 'پیکربندی آماده «' . ( isset( $preset['name'] ) ? $preset['name'] : '' ) . '» اعمال شد: ' . implode( ' | ', $report ) );
