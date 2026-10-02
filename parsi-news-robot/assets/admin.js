@@ -30,6 +30,15 @@
 		}
 	} catch ( err ) {}
 
+	// Source type: RSS vs listing page.
+	function toggleType() {
+		var isPage = $( 'input[name="pnr[source_type]"]:checked' ).val() === 'page';
+		$( '.pnr-page-only' ).toggle( isPage );
+		$( '.pnr-rss-only, #pnr-discover' ).toggle( ! isPage );
+	}
+	$( document ).on( 'change', 'input[name="pnr[source_type]"]', toggleType );
+	toggleType();
+
 	// "Only these sections" list.
 	function toggleScope() {
 		$( '#pnr-random-custom' ).toggle( $( '#pnr-random-scope' ).val() === 'custom' );

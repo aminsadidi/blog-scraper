@@ -78,14 +78,31 @@ class SourceEditor {
 
 			<div class="pnr-tab active" id="pnr-tab-general">
 				<table class="form-table">
-					<tr><th>آدرس RSS</th><td>
+					<tr><th>نوع منبع</th><td>
+						<?php
+						Form::radios(
+							$n( 'source_type' ),
+							$c['source_type'],
+							array(
+								'rss'  => array( 'RSS', 'آدرس فید RSS یا Atom سایت منبع.' ),
+								'page' => array( 'صفحه فهرست خبرها (بدون RSS)', 'آدرس هر صفحه‌ای که فهرست خبر دارد: صفحه برچسب (مثل «مشهد»)، دسته، سرویس یا آخرین اخبار. ربات لینک خبرها را از صفحه پیدا می‌کند و متن کامل هر خبر را از صفحه خودش می‌خواند.' ),
+							)
+						);
+						?>
+					</td></tr>
+					<tr><th>آدرس</th><td>
 						<div class="pnr-inline">
 							<?php Form::url( $n( 'url' ), $c['url'], array( 'id' => 'pnr-url', 'placeholder' => 'https://example.com/rss' ) ); ?>
 							<button type="button" class="button" id="pnr-discover">پیدا کردن خودکار RSS</button>
 						</div>
-						<p class="description">اگر آدرس RSS را نمی‌دانید، آدرس صفحه اصلی یا صفحه یک بخش از سایت منبع را وارد کنید و «پیدا کردن خودکار» را بزنید.</p>
+						<p class="description pnr-rss-only">اگر آدرس RSS را نمی‌دانید، آدرس صفحه اصلی یا صفحه یک بخش از سایت منبع را وارد کنید و «پیدا کردن خودکار» را بزنید.</p>
+						<p class="description pnr-page-only">مثال: <code dir="ltr">https://www.mehrnews.com/tag/مشهد</code> — با دکمه «تست منبع» ببینید کدام خبرها پیدا می‌شوند.</p>
 						<div id="pnr-discover-result"></div>
 					</td></tr>
+					<tr class="pnr-page-only"><th>انتخابگر لینک خبرها</th><td><?php Form::text( $n( 'list_selector' ), $c['list_selector'], array( 'dir' => 'ltr', 'placeholder' => 'خودکار' ) ); ?>
+						<p class="description">اختیاری. اگر تشخیص خودکار لینک‌های اضافه یا کم پیدا کرد، انتخابگر CSS لینک‌ها یا کادر هر خبر را وارد کنید؛ مثلاً <code>li.news h3 a</code> یا <code>.news-list .item</code>.</p></td></tr>
+					<tr class="pnr-page-only"><th>فقط آدرس‌های شامل</th><td><?php Form::text( $n( 'list_url_filter' ), $c['list_url_filter'], array( 'dir' => 'ltr', 'placeholder' => '/news/' ) ); ?>
+						<p class="description">اختیاری. فقط لینک‌هایی وارد شوند که آدرسشان این متن را دارد.</p></td></tr>
 					<tr><th>فعال</th><td><?php Form::checkbox( $n( 'active' ), $c['active'], 'این منبع خودکار بررسی شود' ); ?></td></tr>
 					<tr><th>فاصله بررسی</th><td><?php Form::number( $n( 'interval' ), $c['interval'], 1, 1440 ); ?> دقیقه
 						<p class="description">اگر منبع چند بار پشت سر هم خبر جدید نداشته باشد، فاصله به‌طور خودکار تا ۴ برابر بیشتر می‌شود (قابل خاموش کردن در تنظیمات).</p></td></tr>
@@ -452,12 +469,14 @@ class SourceEditor {
 	 */
 	public static function render_preview( array $report ) {
 		printf(
-			'<div class="pnr-preview-head"><strong>%s</strong> — %s خبر در RSS</div>',
+			'<div class="pnr-preview-head"><strong>%1$s</strong> — %2$s %3$s</div>',
 			esc_html( $report['feed_title'] ? $report['feed_title'] : 'فید' ),
-			esc_html( number_format_i18n( $report['count'] ) )
+			esc_html( number_format_i18n( $report['count'] ) ),
+			'page' === $report['type'] ? 'لینک خبر در این صفحه پیدا شد (چند خبر اول در زیر)' : 'خبر در RSS'
 		);
 		$methods = array(
 			'feed'     => 'متن از خود RSS',
+			'page'     => 'متن از صفحه خبر',
 			'selector' => 'متن از صفحه خبر با انتخابگر شما',
 			'auto'     => 'متن از صفحه خبر با تشخیص خودکار',
 			'jsonld'   => 'متن از داده‌های ساختاریافته صفحه',
@@ -516,6 +535,9 @@ class SourceEditor {
 		$d   = Settings::source_defaults();
 		$out = array(
 			'url'                 => isset( $in['url'] ) ? esc_url_raw( trim( $in['url'] ) ) : '',
+			'source_type'         => Form::choice( $in, 'source_type', array( 'rss', 'page' ), 'rss' ),
+			'list_selector'       => Form::text_value( $in, 'list_selector' ),
+			'list_url_filter'     => Form::text_value( $in, 'list_url_filter' ),
 			'active'              => Form::bool( $in, 'active' ),
 			'interval'            => Form::int( $in, 'interval', 1, 1440, $d['interval'] ),
 			'max_items'           => Form::int( $in, 'max_items', 1, 50, $d['max_items'] ),
@@ -583,15 +605,16 @@ class SourceEditor {
 		Sources::save_config( $post_id, $new );
 
 		// Check soon, and read the whole feed again so changed filters apply to entries already in it.
-		Sources::set_state(
-			$post_id,
-			array(
-				'next_run'      => 0,
-				'error_runs'    => 0,
-				'etag'          => '',
-				'last_modified' => '',
-			)
+		$reset = array(
+			'next_run'      => 0,
+			'error_runs'    => 0,
+			'etag'          => '',
+			'last_modified' => '',
 		);
+		if ( $old['url'] !== $new['url'] || $old['source_type'] !== $new['source_type'] ) {
+			$reset['primed'] = 0; // A new listing page: its archive is skipped again on the first read.
+		}
+		Sources::set_state( $post_id, $reset );
 		if ( $old['index_mode'] !== $new['index_mode'] ) {
 			Queue::schedule_sync();
 		}
@@ -625,7 +648,7 @@ class SourceEditor {
 		return array(
 			'cb'           => $columns['cb'],
 			'title'        => 'منبع',
-			'pnr_feed'     => 'RSS',
+			'pnr_feed'     => 'آدرس',
 			'pnr_category' => 'دسته اصلی',
 			'pnr_status'   => 'وضعیت',
 			'pnr_last'     => 'آخرین بررسی',

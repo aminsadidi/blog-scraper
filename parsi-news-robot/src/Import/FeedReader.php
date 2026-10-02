@@ -51,6 +51,9 @@ class FeedReader {
 
 		$feed = self::parse( $response['body'] );
 		if ( is_wp_error( $feed ) ) {
+			if ( preg_match( '~<html[\s>]~i', substr( $response['body'], 0, 3000 ) ) ) {
+				return new \WP_Error( 'pnr_not_feed', 'این آدرس یک صفحه وب است، نه RSS. اگر می‌خواهید خبرهای همین صفحه وارد شوند، «نوع منبع» را روی «صفحه فهرست خبرها» بگذارید.' );
+			}
 			return $feed;
 		}
 
@@ -72,6 +75,18 @@ class FeedReader {
 			}
 		);
 		return $out;
+	}
+
+	/**
+	 * Reads a source of either type: RSS/Atom feed, or a listing page without RSS.
+	 *
+	 * @return array|\WP_Error
+	 */
+	public static function fetch( array $cfg, $etag = '', $last_modified = '' ) {
+		if ( isset( $cfg['source_type'] ) && 'page' === $cfg['source_type'] ) {
+			return ListingReader::read( $cfg['url'], $cfg, $etag, $last_modified );
+		}
+		return self::read( $cfg['url'], $etag, $last_modified );
 	}
 
 	/**

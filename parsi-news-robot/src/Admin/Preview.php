@@ -24,9 +24,9 @@ class Preview {
 	 */
 	public static function run( array $cfg, $limit = 3, $name = '' ) {
 		if ( empty( $cfg['url'] ) ) {
-			return new \WP_Error( 'pnr_no_url', 'آدرس RSS را وارد کنید.' );
+			return new \WP_Error( 'pnr_no_url', 'آدرس منبع را وارد کنید.' );
 		}
-		$feed = FeedReader::read( $cfg['url'] );
+		$feed = FeedReader::fetch( $cfg );
 		if ( is_wp_error( $feed ) ) {
 			return $feed;
 		}
@@ -34,6 +34,7 @@ class Preview {
 			'feed_title' => $feed['title'],
 			'feed_home'  => $feed['home'],
 			'count'      => count( $feed['items'] ),
+			'type'       => isset( $cfg['source_type'] ) ? $cfg['source_type'] : 'rss',
 			'items'      => array(),
 		);
 

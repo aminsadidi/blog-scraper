@@ -111,4 +111,15 @@ $pnr_a = ParsiNewsRobot\Settings::attribution( $pnr_cfg );
 check( 'source overrides position, inherits the rest', true === $pnr_a['enabled'] && 'start' === $pnr_a['position'] && ParsiNewsRobot\Settings::get( 'attr_link' ) === $pnr_a['link'] );
 check( 'replacements touch text only, never URLs', '<p><a href="https://site.ir/قدیم">جدید</a> جدید</p>' === rawurldecode( ParsiNewsRobot\Import\Cleaner::replace_text( '<p><a href="https://site.ir/قدیم">قدیم</a> قدیم</p>', array( 'قدیم' => 'جدید' ) ) ) );
 check( 'title cleanup removes the agency suffix', 'افزایش قیمت نان در تهران' === ParsiNewsRobot\Import\Cleaner::clean_title( 'افزایش قیمت نان در تهران - ایسنا', "ایسنا" ) );
+
+// Listing pages without RSS.
+check( 'address shapes group articles', '/news/N/S' === ParsiNewsRobot\Import\ListingReader::shape( 'https://www.mehrnews.com/news/6612001/' . rawurlencode( 'افتتاح-خط-سوم' ) ) && '/persian/articles/X' === ParsiNewsRobot\Import\ListingReader::shape( 'https://www.bbc.com/persian/articles/cmd7912g4xeno' ) );
+check( 'one article linked twice is one item', ParsiNewsRobot\Import\ListingReader::article_key( 'https://www.mehrnews.com/news/6612001' ) === ParsiNewsRobot\Import\ListingReader::article_key( 'https://www.mehrnews.com/news/6612001/slug' ) );
+check( 'date paths are not article ids', ParsiNewsRobot\Import\ListingReader::article_key( 'https://www.tasnimnews.com/fa/news/1405/07/10/3412345/a' ) !== ParsiNewsRobot\Import\ListingReader::article_key( 'https://www.tasnimnews.com/fa/news/1405/07/10/3412399/b' ) );
+$pnr_li = function ( $id, $t ) {
+	return '<li class="news"><h3><a href="/news/' . $id . '/s">' . $t . '</a></h3><p class="introtext">خلاصه خبر شماره ' . $id . ' که به اندازه کافی بلند است تا خلاصه حساب شود.</p><time><a href="/news/' . $id . '">۱۰ مهر ۱۴۰۵، ۱۲:۳۰</a></time><figure><a href="/news/' . $id . '/s"><img data-src="https://media.example.ir/' . $id . '.jpg" src="/loader.gif"></a></figure></li>';
+};
+$pnr_page = '<html><body><header><nav><a href="/service/politics">سیاسی</a></nav></header><main><ul>' . $pnr_li( 1001, 'عنوان خبر اول درباره شهر مشهد و قطار شهری' ) . $pnr_li( 1002, 'عنوان خبر دوم درباره بارش باران در خراسان' ) . $pnr_li( 1003, 'عنوان خبر سوم درباره ثبت‌نام زائران در مشهد' ) . $pnr_li( 1004, 'عنوان خبر چهارم درباره نشست شورای شهر مشهد' ) . '</ul></main><footer><a href="/news/900/x">لینک فوتر با متن طولانی کافی برای عنوان</a></footer></body></html>';
+$pnr_r = ParsiNewsRobot\Import\ListingReader::parse( $pnr_page, 'https://news.example.ir/tag/x' );
+check( 'listing: 4 articles, headline titles, lazy images, summaries', 4 === count( $pnr_r['items'] ) && 'عنوان خبر اول درباره شهر مشهد و قطار شهری' === $pnr_r['items'][0]['title'] && 'https://media.example.ir/1001.jpg' === $pnr_r['items'][0]['enclosures'][0]['url'] && '' !== $pnr_r['items'][0]['description'] );
 if ( $GLOBALS['pnr_failed'] ) { WP_CLI::error( $GLOBALS['pnr_failed'] . " test(s) failed." ); } WP_CLI::success( "All tests passed." );

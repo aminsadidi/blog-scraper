@@ -36,6 +36,10 @@ class Builder {
 		$feed_html = '' !== trim( (string) $item['content'] ) ? $item['content'] : $item['description'];
 		$feed_len  = Util::strlen( Util::text( $feed_html ) );
 		$mode      = in_array( $cfg['content_mode'], array( 'auto', 'feed', 'page' ), true ) ? $cfg['content_mode'] : 'auto';
+		$is_list   = isset( $cfg['source_type'] ) && 'page' === $cfg['source_type'];
+		if ( $is_list && 'feed' === $mode ) {
+			$mode = 'auto'; // A listing page has no story text of its own.
+		}
 		$need_page = $link && ( 'page' === $mode || ( 'auto' === $mode && $feed_len < self::FULL_TEXT_MIN ) );
 
 		$extracted = null;
@@ -62,6 +66,13 @@ class Builder {
 			} else {
 				$page_url  = $page['url'];
 				$extracted = Extractor::extract( $page['body'], $page_url, $cfg );
+				// From a listing page, the article page's own headline and date are the reliable ones.
+				if ( $is_list && Util::strlen( $extracted['title'] ) >= 8 ) {
+					$title = Cleaner::clean_title( $extracted['title'], isset( $cfg['title_remove'] ) ? $cfg['title_remove'] : '' );
+					if ( $pairs ) {
+						$title = str_replace( array_keys( $pairs ), array_values( $pairs ), $title );
+					}
+				}
 			}
 		}
 
@@ -165,7 +176,8 @@ class Builder {
 			'image_count'  => count( $images ),
 			'has_video'    => $has_video,
 			'method'       => $method,
-			'date'         => (int) $item['date'],
+			// A listing page often shows only the day; the article page has the exact time.
+			'date'         => ( $is_list && $extracted && $extracted['date'] ) ? (int) $extracted['date'] : ( (int) $item['date'] ? (int) $item['date'] : ( $extracted ? (int) $extracted['date'] : 0 ) ),
 			'tags'         => isset( $item['categories'] ) ? (array) $item['categories'] : array(),
 			'rules'        => $rules,
 			'content_hash' => md5( $title . '|' . $text ),

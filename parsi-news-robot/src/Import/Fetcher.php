@@ -41,7 +41,7 @@ class Fetcher {
 		}
 
 		$now  = time();
-		$feed = FeedReader::read( $cfg['url'], $state['etag'], $state['last_modified'] );
+		$feed = FeedReader::fetch( $cfg, $state['etag'], $state['last_modified'] );
 
 		if ( is_wp_error( $feed ) ) {
 			$errors  = (int) $state['error_runs'] + 1;
@@ -62,6 +62,7 @@ class Fetcher {
 		}
 
 		$state_update = array(
+			'primed'        => 1,
 			'last_run'      => $now,
 			'etag'          => $feed['etag'],
 			'last_modified' => $feed['last_modified'],
@@ -77,6 +78,9 @@ class Fetcher {
 
 		$candidates = array();
 		$deferred   = false;
+		// The first read of a listing page shows an archive (a tag page may go back weeks): take only the newest
+		// few and treat the rest as already seen.
+		$first_page = 'page' === $cfg['source_type'] && empty( $state['primed'] );
 		if ( ! $feed['not_modified'] ) {
 			// "0 = no limit" still stops at 45 days: the seen table forgets entries after 60 days, and an older
 			// entry still sitting in a feed must not be imported a second time.
@@ -103,6 +107,22 @@ class Fetcher {
 					continue;
 				}
 				if ( count( $candidates ) >= max( 1, (int) $cfg['max_items'] ) ) {
+					if ( $first_page ) {
+						Seen::insert(
+							array(
+								'source_id'  => $source_id,
+								'item_hash'  => $hash,
+								'title_norm' => Dedupe::title_norm( $item['title'] ),
+								'title_hash' => Dedupe::title_hash( $item['title'] ),
+								'link'       => $item['link'],
+								'feed_sig'   => $sig,
+								'status'     => 'skipped',
+								'note'       => 'خبر قدیمی صفحه در اولین بررسی',
+							)
+						);
+						$result['skipped']++;
+						continue;
+					}
 					$deferred = true;
 					continue;
 				}

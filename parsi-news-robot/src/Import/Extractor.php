@@ -153,6 +153,8 @@ class Extractor {
 			'description' => '',
 			'method'      => '',
 			'base'        => $url,
+			'title'       => '',
+			'date'        => 0,
 		);
 
 		$doc = Dom::load( $html, true );
@@ -178,6 +180,9 @@ class Extractor {
 		if ( ! $result['video'] && $jsonld['video'] ) {
 			$result['video'] = Util::absolute_url( $jsonld['video'], $url );
 		}
+
+		$result['title'] = self::page_title( $xp );
+		$result['date']  = self::published( $xp, $jsonld );
 
 		// Lead first: it often lives in the header, which is removed below.
 		if ( ! isset( $cfg['include_lead'] ) || $cfg['include_lead'] ) {
@@ -259,6 +264,48 @@ class Extractor {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * The article's headline: og:title / h1, without a trailing " - site name".
+	 */
+	private static function page_title( \DOMXPath $xp ) {
+		$h1 = $xp->query( '//h1' )->item( 0 );
+		$h1 = $h1 ? Util::text( $h1->textContent ) : '';
+		if ( Util::strlen( $h1 ) >= 8 ) {
+			return $h1; // The h1 is the headline itself, without the site name.
+		}
+		$title = Util::text( self::meta( $xp, array( 'og:title', 'twitter:title' ) ) );
+		$site  = Util::text( self::meta( $xp, array( 'og:site_name' ) ) );
+		if ( $site && Util::strlen( $title ) > Util::strlen( $site ) + 3 ) {
+			$title = (string) preg_replace( '/\s*[|\-–—:]\s*' . preg_quote( $site, '/' ) . '\s*$/u', '', $title );
+		}
+		return trim( $title );
+	}
+
+	/**
+	 * Publication time from article meta, JSON-LD or <time>.
+	 */
+	private static function published( \DOMXPath $xp, array $jsonld ) {
+		$candidates = array(
+			self::meta( $xp, array( 'article:published_time', 'og:published_time', 'pubdate', 'publishdate', 'date', 'dc.date' ) ),
+			$jsonld['date'],
+		);
+		$node = $xp->query( '//*[@itemprop="datePublished"]' )->item( 0 );
+		if ( $node ) {
+			$candidates[] = $node->getAttribute( 'content' ) ? $node->getAttribute( 'content' ) : $node->getAttribute( 'datetime' );
+		}
+		$time = $xp->query( '//time[@datetime]' )->item( 0 );
+		if ( $time ) {
+			$candidates[] = $time->getAttribute( 'datetime' );
+		}
+		foreach ( $candidates as $value ) {
+			$ts = $value ? strtotime( (string) $value ) : false;
+			if ( $ts && $ts > 946684800 && $ts <= time() + DAY_IN_SECONDS ) {
+				return (int) $ts;
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -452,6 +499,7 @@ class Extractor {
 			'image'       => '',
 			'description' => '',
 			'video'       => '',
+			'date'        => '',
 		);
 		foreach ( $xp->query( '//script[@type="application/ld+json"]' ) as $script ) {
 			$data = json_decode( trim( $script->textContent ), true );
@@ -477,6 +525,9 @@ class Extractor {
 				if ( preg_match( '/Article|BlogPosting|Reportage/i', $types ) ) {
 					if ( ! $out['body'] && ! empty( $item['articleBody'] ) && is_string( $item['articleBody'] ) ) {
 						$out['body'] = $item['articleBody'];
+					}
+					if ( ! $out['date'] && ! empty( $item['datePublished'] ) && is_string( $item['datePublished'] ) ) {
+						$out['date'] = $item['datePublished'];
 					}
 					if ( ! $out['description'] && ! empty( $item['description'] ) && is_string( $item['description'] ) ) {
 						$out['description'] = $item['description'];

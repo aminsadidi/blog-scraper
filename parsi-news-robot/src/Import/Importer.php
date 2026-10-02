@@ -93,6 +93,12 @@ class Importer {
 		self::extend_time_limit();
 		$prepared = Builder::build( $item, $cfg );
 
+		if ( ! is_wp_error( $prepared ) && $prepared['date'] ) {
+			$max_age = (int) $cfg['max_age_hours'] > 0 ? (int) $cfg['max_age_hours'] * HOUR_IN_SECONDS : 45 * DAY_IN_SECONDS;
+			if ( $prepared['date'] < time() - $max_age ) {
+				$prepared = new \WP_Error( 'pnr_skip', 'قدیمی‌تر از حد مجاز (تاریخ صفحه خبر).' );
+			}
+		}
 		if ( ! is_wp_error( $prepared ) ) {
 			// Same story republished by another outlet ("به نقل از …"): the text is what gives it away.
 			$copy = Similarity::find( $prepared['title'] . ' ' . $prepared['text'], 0, $cfg );

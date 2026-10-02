@@ -84,6 +84,9 @@ class Settings {
 	public static function source_defaults() {
 		return array(
 			'url'                 => '',
+			'source_type'         => 'rss', // rss | page (a listing page without RSS).
+			'list_selector'       => '',    // page: CSS selector of the article links (optional).
+			'list_url_filter'     => '',    // page: only links whose address contains this (optional).
 			'active'              => 1,
 			'interval'            => 15,
 			'max_items'           => 5,

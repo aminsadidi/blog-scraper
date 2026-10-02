@@ -234,7 +234,7 @@ class Admin {
 		}
 		$found = FeedReader::discover( $url );
 		if ( ! $found ) {
-			wp_send_json_error( 'فیدی پیدا نشد. آدرس RSS را از خود سایت منبع پیدا کنید (معمولاً در پایین صفحه با نماد RSS).' );
+			wp_send_json_error( 'فید RSS پیدا نشد. می‌توانید «نوع منبع» را روی «صفحه فهرست خبرها» بگذارید تا خبرهای همین صفحه مستقیم خوانده شوند.' );
 		}
 		wp_send_json_success( $found );
 	}
