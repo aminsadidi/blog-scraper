@@ -222,12 +222,20 @@ function summarize(src) {
 async function main() {
 	const urls = readUrls();
 	log(`${urls.length} آدرس، کلمه کلیدی: «${KEYWORD}»`);
-	const browser = await launch();
-	// SCOUT_IGNORE_CERT=1 is only for networks behind an inspecting proxy (corporate / test servers).
-	const context = await browser.newContext({ locale: 'fa-IR', viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: process.env.SCOUT_IGNORE_CERT === '1' });
-	const page = await context.newPage();
-	const parser = await context.newPage();
-	await parser.goto('about:blank');
+	let browser, context, page, parser;
+	// (Re)opens the browser, e.g. after the window was closed by accident or the browser crashed.
+	const open = async () => {
+		await browser?.close().catch(() => {});
+		browser = await launch();
+		// SCOUT_IGNORE_CERT=1 is only for networks behind an inspecting proxy (corporate / test servers).
+		context = await browser.newContext({ locale: 'fa-IR', viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: process.env.SCOUT_IGNORE_CERT === '1' });
+		page = await context.newPage();
+		parser = await context.newPage();
+		await parser.goto('about:blank');
+		opened.clear();
+	};
+	const alive = () => browser.isConnected() && !page.isClosed() && !parser.isClosed();
+	await open();
 
 	const report = { generated: new Date().toISOString(), keyword: KEYWORD, sources: [] };
 	const save = () => {
@@ -235,10 +243,15 @@ async function main() {
 		fs.writeFileSync(path.join(DIR, 'report.txt'), report.sources.map(summarize).join('\n\n') + '\n');
 	};
 
+	const retried = new Set();
 	for (const [n, raw] of urls.entries()) {
 		const url = encodeUrl(raw);
 		log(`\n[${n + 1}/${urls.length}] ${raw}`);
 		const src = { url: raw };
+		if (!alive()) {
+			log('   مرورگر بسته شده بود؛ دوباره باز می‌شود…');
+			await open();
+		}
 		try {
 			const r = await fetchRaw(context, page, url);
 			Object.assign(src, { status: r.status, final_url: r.url, content_type: r.type, challenge: !!r.challenge });
@@ -274,6 +287,15 @@ async function main() {
 		} catch (e) {
 			src.error = String(e.message || e).split('\n')[0];
 			log('   خطا: ' + src.error);
+			if (!alive()) {
+				// The browser went away mid-source: reopen and give this address one more try.
+				log('   مرورگر بسته شد؛ دوباره باز می‌شود و همین آدرس تکرار می‌شود…');
+				await open();
+				if (!retried.has(raw)) {
+					retried.add(raw);
+					urls.splice(n + 1, 0, raw);
+				}
+			}
 		}
 		report.sources.push(src);
 		save(); // After every source, so a crash never loses earlier results.
